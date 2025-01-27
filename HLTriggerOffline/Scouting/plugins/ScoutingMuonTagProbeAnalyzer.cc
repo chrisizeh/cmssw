@@ -167,7 +167,6 @@ void ScoutingMuonTagProbeAnalyzer::fillHistograms_resonance(const kProbeKinemati
   histos.hnPixel->Fill(mu.nPixelLayersWithMeasurement());
   histos.hnTracker->Fill(mu.nTrackerLayersWithMeasurement());
   histos.htrk_qoverp->Fill(mu.trk_qoverp());
-
   if (!runWithoutVtx_) {
     histos.hLxy->Fill(lxy);
     histos.hXError->Fill(vertex.xError());
