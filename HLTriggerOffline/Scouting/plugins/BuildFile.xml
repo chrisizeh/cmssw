@@ -5,6 +5,7 @@
 <use name="CLHEP"/>
 <use name="DataFormats/PatCandidates"/>
 <use name="DataFormats/Scouting"/>
+<<<<<<< HEAD
 <use name="L1Trigger/L1TGlobal"/>
 <use name="DataFormats/L1TGlobal"/>
 <use name="FWCore/Utilities"/>
@@ -12,3 +13,6 @@
 <use name="HLTrigger/HLTcore"/>
 <use name="DataFormats/HLTReco"/>
 <flags EDM_PLUGIN="1"/>
+=======
+<flags EDM_PLUGIN="1"/>
+>>>>>>> 7649ec2dac4 ([DQM For Scouting Electron] Update to CMSSW_15_0_X)
