@@ -129,7 +129,7 @@ namespace cms::soa {
     SOA_HOST_DEVICE SOA_INLINE constexpr SoAConstParametersImpl(ValueType const* addr, size_type size)
         : addr_(addr), size_{size} {}
 
-    // constructor from a non-const parameter setsize
+    // constructor from a non-const parameter size
     SOA_HOST_DEVICE SOA_INLINE constexpr SoAConstParametersImpl(SoAParametersImpl<columnType, ValueType> const& o)
         : addr_{o.addr_}, size_{o.size_} {}
 

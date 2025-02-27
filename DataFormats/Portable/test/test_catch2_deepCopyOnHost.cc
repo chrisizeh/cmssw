@@ -3,8 +3,10 @@
 
 #include <catch.hpp>
 
-#include "DataFormats/SoATemplate/interface/SoALayout.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
+#include "DataFormats/SoATemplate/interface/SoACommon.h"
+#include "DataFormats/SoATemplate/interface/SoALayout.h"
+#include "DataFormats/SoATemplate/interface/SoAView.h"
 
 GENERATE_SOA_LAYOUT(SoAPositionTemplate,
                     SOA_COLUMN(float, x),
@@ -27,17 +29,17 @@ using SoAPCA = SoAPCATemplate<>;
 using SoAPCAView = SoAPCA::View;
 using SoAPCAConstView = SoAPCA::ConstView;
 
-GENERATE_SOA_LAYOUT(CustomizedSoATemplate,
-                    SOA_COLUMN(float, x),
-                    SOA_COLUMN(float, y),
-                    SOA_COLUMN(float, z),
+GENERATE_SOA_LAYOUT(GenericSoATemplate,
+                    SOA_COLUMN(float, xPos),
+                    SOA_COLUMN(float, yPos),
+                    SOA_COLUMN(float, zPos),
                     SOA_EIGEN_COLUMN(Eigen::Vector3d, candidateDirection))
 
-using CustomizedSoA = CustomizedSoATemplate<>;
-using CustomizedSoAView = CustomizedSoA::View;
-using CustomizedSoAConstView = CustomizedSoA::ConstView;
+using GenericSoA = GenericSoATemplate<>;
+using GenericSoAView = GenericSoA::View;
+using GenericSoAConstView = GenericSoA::ConstView;
 
-TEST_CASE("Aggregate from SoA Customized View") {
+TEST_CASE("Deep copy from SoA Generic View") {
   // common number of elements for the SoAs
   const std::size_t elems = 10;
 
@@ -70,30 +72,30 @@ TEST_CASE("Aggregate from SoA Customized View") {
     pcaCollectionView[i].candidateDirection()(2) = positionCollectionView[i].z() / time;
   }
 
-  SECTION("Aggregate the View") {
+  SECTION("Deep copy the View") {
     // addresses and size of the SoA columns
     const auto posRecs = positionCollectionView.records();
     const auto pcaRecs = pcaCollectionView.records();
 
     // building the View with runtime check for the size
-    CustomizedSoAView customView(posRecs.x(), posRecs.y(), posRecs.z(), pcaRecs.candidateDirection());
+    GenericSoAView genericView(posRecs.x(), posRecs.y(), posRecs.z(), pcaRecs.candidateDirection());
 
     // Check for equality of memory addresses
-    REQUIRE(customView.metadata().addressOf_x() == positionCollectionView.metadata().addressOf_x());
-    REQUIRE(customView.metadata().addressOf_y() == positionCollectionView.metadata().addressOf_y());
-    REQUIRE(customView.metadata().addressOf_z() == positionCollectionView.metadata().addressOf_z());
-    REQUIRE(customView.metadata().addressOf_candidateDirection() ==
+    REQUIRE(genericView.metadata().addressOf_xPos() == positionCollectionView.metadata().addressOf_x());
+    REQUIRE(genericView.metadata().addressOf_yPos() == positionCollectionView.metadata().addressOf_y());
+    REQUIRE(genericView.metadata().addressOf_zPos() == positionCollectionView.metadata().addressOf_z());
+    REQUIRE(genericView.metadata().addressOf_candidateDirection() ==
             pcaCollectionView.metadata().addressOf_candidateDirection());
 
     // PortableHostCollection that will host the aggregated columns
-    PortableHostCollection<CustomizedSoA> customCollection(elems, cms::alpakatools::host());
-    customCollection.deep_copy(customView);
+    PortableHostCollection<GenericSoA> genericCollection(elems, cms::alpakatools::host());
+    genericCollection.deepCopy(genericView);
 
     // Check for inequality of memory addresses
-    REQUIRE(customCollection.view().metadata().addressOf_x() != positionCollectionView.metadata().addressOf_x());
-    REQUIRE(customCollection.view().metadata().addressOf_y() != positionCollectionView.metadata().addressOf_y());
-    REQUIRE(customCollection.view().metadata().addressOf_z() != positionCollectionView.metadata().addressOf_z());
-    REQUIRE(customCollection.view().metadata().addressOf_candidateDirection() !=
+    REQUIRE(genericCollection.view().metadata().addressOf_xPos() != positionCollectionView.metadata().addressOf_x());
+    REQUIRE(genericCollection.view().metadata().addressOf_yPos() != positionCollectionView.metadata().addressOf_y());
+    REQUIRE(genericCollection.view().metadata().addressOf_zPos() != positionCollectionView.metadata().addressOf_z());
+    REQUIRE(genericCollection.view().metadata().addressOf_candidateDirection() !=
             pcaCollectionView.metadata().addressOf_candidateDirection());
   }
 
@@ -103,24 +105,24 @@ TEST_CASE("Aggregate from SoA Customized View") {
     const auto pcaRecs = pcaCollectionConstView.records();
 
     // building the View with runtime check for the size
-    CustomizedSoAConstView customConstView(posRecs.x(), posRecs.y(), posRecs.z(), pcaRecs.candidateDirection());
+    GenericSoAConstView genericConstView(posRecs.x(), posRecs.y(), posRecs.z(), pcaRecs.candidateDirection());
 
     // Check for equality of memory addresses
-    REQUIRE(customConstView.metadata().addressOf_x() == positionCollectionView.metadata().addressOf_x());
-    REQUIRE(customConstView.metadata().addressOf_y() == positionCollectionView.metadata().addressOf_y());
-    REQUIRE(customConstView.metadata().addressOf_z() == positionCollectionView.metadata().addressOf_z());
-    REQUIRE(customConstView.metadata().addressOf_candidateDirection() ==
+    REQUIRE(genericConstView.metadata().addressOf_xPos() == positionCollectionView.metadata().addressOf_x());
+    REQUIRE(genericConstView.metadata().addressOf_yPos() == positionCollectionView.metadata().addressOf_y());
+    REQUIRE(genericConstView.metadata().addressOf_zPos() == positionCollectionView.metadata().addressOf_z());
+    REQUIRE(genericConstView.metadata().addressOf_candidateDirection() ==
             pcaCollectionView.metadata().addressOf_candidateDirection());
 
     // PortableHostCollection that will host the aggregated columns
-    PortableHostCollection<CustomizedSoA> customCollection(elems, cms::alpakatools::host());
-    customCollection.deep_copy(customConstView);
+    PortableHostCollection<GenericSoA> genericCollection(elems, cms::alpakatools::host());
+    genericCollection.deepCopy(genericConstView);
 
     // Check for inequality of memory addresses
-    REQUIRE(customCollection.view().metadata().addressOf_x() != positionCollectionView.metadata().addressOf_x());
-    REQUIRE(customCollection.view().metadata().addressOf_y() != positionCollectionView.metadata().addressOf_y());
-    REQUIRE(customCollection.view().metadata().addressOf_z() != positionCollectionView.metadata().addressOf_z());
-    REQUIRE(customCollection.view().metadata().addressOf_candidateDirection() !=
+    REQUIRE(genericCollection.view().metadata().addressOf_xPos() != positionCollectionView.metadata().addressOf_x());
+    REQUIRE(genericCollection.view().metadata().addressOf_yPos() != positionCollectionView.metadata().addressOf_y());
+    REQUIRE(genericCollection.view().metadata().addressOf_zPos() != positionCollectionView.metadata().addressOf_z());
+    REQUIRE(genericCollection.view().metadata().addressOf_candidateDirection() !=
             pcaCollectionView.metadata().addressOf_candidateDirection());
   }
 }

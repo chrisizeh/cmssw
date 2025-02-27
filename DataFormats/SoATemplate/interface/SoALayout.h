@@ -6,8 +6,6 @@
  * with compile-time size and alignment, and accessors to the "rows" and "columns".
  */
 
-#include <cassert>
-
 #include "FWCore/Reflection/interface/reflex.h"
 
 #include "SoACommon.h"
@@ -419,20 +417,24 @@
 
 #define _DECLARE_SOA_DATA_MEMBER(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_DECLARE_SOA_DATA_MEMBER_IMPL TYPE_NAME)
 
-#define _COPY_VIEW_COLUMNS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                           \
-  _SWITCH_ON_TYPE(VALUE_TYPE, /* Scalar */                                                            \
-                  memcpy(BOOST_PP_CAT(this->metadata().addressOf_, NAME)(),                           \
-                         BOOST_PP_CAT(view.metadata().addressOf_, NAME)(),                            \
-                         cms::soa::alignSize(sizeof(CPP_TYPE), alignment));                           \
-                  , /* Column */                                                                      \
-                  memcpy(BOOST_PP_CAT(this->metadata().addressOf_, NAME)(),                           \
-                         BOOST_PP_CAT(view.metadata().addressOf_, NAME)(),                            \
-                         cms::soa::alignSize(this->elements_ * sizeof(CPP_TYPE), alignment));         \
-                  , /* Eigen column */                                                                \
-                  memcpy(BOOST_PP_CAT(this->metadata().addressOf_, NAME)(),                           \
-                         BOOST_PP_CAT(view.metadata().addressOf_, NAME)(),                            \
-                         cms::soa::alignSize(this->elements_ * sizeof(CPP_TYPE::Scalar), alignment) * \
-                             CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime);)
+#define _COPY_VIEW_COLUMNS_IMPL(VALUE_TYPE, CPP_TYPE, NAME)                                          \
+  _SWITCH_ON_TYPE(                                                                                   \
+      VALUE_TYPE, /* Scalar */                                                                       \
+      memcpy(BOOST_PP_CAT(this->metadata().addressOf_, NAME)(),                                      \
+             BOOST_PP_CAT(view.metadata().addressOf_, NAME)(),                                       \
+             sizeof(CPP_TYPE));                                                                      \
+      , /* Column */                                                                                 \
+      memcpy(BOOST_PP_CAT(this->metadata().addressOf_, NAME)(),                                      \
+             BOOST_PP_CAT(view.metadata().addressOf_, NAME)(),                                       \
+             view.metadata().size() * sizeof(CPP_TYPE));                                             \
+      , /* Eigen column */                                                                           \
+      for (unsigned int i = 0; i < CPP_TYPE::RowsAtCompileTime * CPP_TYPE::ColsAtCompileTime; i++) { \
+        memcpy(BOOST_PP_CAT(this->metadata().addressOf_, NAME)() +                                   \
+                   i * cms::soa::alignSize(this->elements_ * sizeof(CPP_TYPE::Scalar), alignment) /  \
+                       sizeof(CPP_TYPE::Scalar),                                                     \
+               &view[0].NAME().coeff(i),                                                             \
+               view.metadata().size() * sizeof(CPP_TYPE::Scalar));                                   \
+      })
 
 #define _COPY_VIEW_COLUMNS(R, DATA, TYPE_NAME) BOOST_PP_EXPAND(_COPY_VIEW_COLUMNS_IMPL TYPE_NAME)
 
@@ -535,7 +537,6 @@
       Metadata& operator=(const Metadata&) = delete;                                                                   \
       Metadata(const Metadata&) = delete;                                                                              \
                                                                                                                        \
-                                                                                                                       \
     private:                                                                                                           \
       SOA_HOST_DEVICE SOA_INLINE Metadata(const CLASS& _soa_impl_parent) : parent_(_soa_impl_parent) {}                \
       const CLASS& parent_;                                                                                            \
@@ -600,11 +601,10 @@
         return *this;                                                                                                  \
     }                                                                                                                  \
                                                                                                                        \
-    SOA_HOST_ONLY                                                                                                      \
-    void deep_copy(ConstView const& view) {                                                                            \
+    SOA_HOST_ONLY void deepCopy(ConstView const& view) {                                                               \
       if (elements_ < view.metadata().size())                                                                          \
         throw std::runtime_error(                                                                                      \
-            "In deep_copy method: number of elements mismatch ");                                                      \
+            "In deepCopy method: number of elements mismatch ");                                                       \
       _ITERATE_ON_ALL(_COPY_VIEW_COLUMNS, ~, __VA_ARGS__)                                                              \
     }                                                                                                                  \
                                                                                                                        \

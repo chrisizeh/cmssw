@@ -44,7 +44,7 @@ provided: `ViewTemplate`, `ViewViewTemplateFreeParams` and respectively `ConstVi
 `ConstViewTemplateFreeParams`. The parametrization of those templates is explained in the [Template
 parameters section](#template-parameters).
 
-It is also possible to build a Customized View passing from the [Metarecords sublass](#metarecords-subclass). This
+It is also possible to build a Generic View passing from the [Metarecords sublass](#metarecords-subclass). This
 view can give access to pointers not belonging to the same SoA and for this reason not contiguous in memory.
 
 ## Metadata subclass
@@ -59,7 +59,7 @@ layouts.
 
 This subclass can be instanciated with the `records()` member function from a View and the member variables are
 column objects. Every object contains the address to the first element of the column, the number of elements
-per column and the stride for the Eigen columns. This is useful for building the Customized View described in
+per column and the stride for the Eigen columns. This is useful for building the Generic View described in
 [View](#view) as soon as run-time check on the column sizes is performed. This nested class can be useful also
 in the perspective of being able to manage columns of different sizes in the same data structure.  
 
