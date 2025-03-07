@@ -100,10 +100,20 @@
   <use name="pytorch-cuda"/>
 </bin>
 
-<bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cc">
+<bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
+  <use name="boost_filesystem"/>
   <use name="catch2"/>
   <use name="cppunit"/>
+  <use name="cuda"/>
   <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/ParameterSetReader"/>
+  <use name="FWCore/PluginManager"/>
+  <use name="FWCore/ServiceRegistry"/>
+  <use name="FWCore/Utilities"/>
+  <use name="HeterogeneousCore/CUDAServices"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
 </bin>
 
 <bin file="alpaka/testTorchMTMS.cc testRunner.cc" name="testTorchMTMS-alpaka">
