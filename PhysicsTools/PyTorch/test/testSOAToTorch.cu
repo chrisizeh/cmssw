@@ -25,8 +25,8 @@ CPPUNIT_TEST_SUITE_REGISTRATION(testSOAToTorch);
 
 std::string testSOAToTorch::pyScript() const { return "create_linear_dnn.py"; }
 
-template <std::size_t N>
-torch::Tensor array_to_tensor(torch::Device device, float* arr, const long int* size) {
+template <typename T, std::size_t N>
+torch::Tensor array_to_tensor(torch::Device device, T* arr, const long int* size) {
   long int arr_size[N];
   long int arr_stride[N];
   std::copy(size, size+N, arr_size);
@@ -36,14 +36,14 @@ torch::Tensor array_to_tensor(torch::Device device, float* arr, const long int* 
   arr_stride[0] = 1;
   arr_stride[N-1] *= arr_stride[N-2];
 
-  auto options = torch::TensorOptions().dtype(torch::kFloat).device(device).pinned_memory(true);
+  auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
   torch::Tensor tensor = torch::from_blob(arr, arr_size, arr_stride, options);
 
   return tensor;
 }
 
-template <std::size_t N>
-void print_column_major(float* arr, const long int* size) {
+template <typename T, std::size_t N>
+void print_column_major(T* arr, const long int* size) {
   if (N == 2) {
     for (int i = 0; i < size[0]; i++) {
       for (int j = 0; j < size[1]; j++) {
@@ -77,7 +77,7 @@ void testSOAToTorch::test() {
   std::array<float, 3> result_check{{3.1f, 7.8f, 7.1f}};
 
   // Prints array in correct form.
-  print_column_major<dims>(input_cpu, shape);
+  print_column_major<float, dims>(input_cpu, shape);
 
   float *input_gpu, *result_gpu;
   cudaMalloc(&input_gpu, sizeof(input_cpu));
@@ -86,7 +86,7 @@ void testSOAToTorch::test() {
 
   // Use stride to read correctly.
   std::cout << "Converting vector to Torch tensors on CPU with stride" << std::endl;
-  torch::Tensor input_tensor = array_to_tensor<dims>(device, input_gpu, shape);
+  torch::Tensor input_tensor = array_to_tensor<float, dims>(device, input_gpu, shape);
 
   // Load the TorchScript model
   std::string model_path = dataPath_ + "/linear_dnn.pt";

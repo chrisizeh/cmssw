@@ -14,8 +14,12 @@ using std::chrono::duration_cast;
 using std::chrono::duration;
 using std::chrono::milliseconds;
 
-template <std::size_t N>
-torch::Tensor array_to_tensor(torch::Device device, int* arr, const long int* size) {
+/*
+ * Demonstration of using stride in torch::from_blob to load SOA input 
+ */
+
+template <typename T, std::size_t N>
+torch::Tensor array_to_tensor(torch::Device device, T* arr, const long int* size) {
   long int arr_size[N];
   long int arr_stride[N];
   std::copy(size, size+N, arr_size);
@@ -25,14 +29,15 @@ torch::Tensor array_to_tensor(torch::Device device, int* arr, const long int* si
   arr_stride[0] = 1;
   arr_stride[N-1] *= arr_stride[N-2];
 
-  auto options = torch::TensorOptions().dtype(torch::kInt).device(device).pinned_memory(true);
+  // Create Torch DType based on https://discuss.pytorch.org/t/mapping-a-template-type-to-a-scalartype/53174
+  auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
   torch::Tensor tensor = torch::from_blob(arr, arr_size, arr_stride, options);
 
   return tensor;
 }
 
-template <std::size_t N>
-void print_column_major(int* arr, const long int* size) {
+template <typename T, std::size_t N>
+void print_column_major(T* arr, const long int* size) {
   if (N == 2) {
     for (int i = 0; i < size[0]; i++) {
       for (int j = 0; j < size[1]; j++) {
@@ -68,7 +73,7 @@ int main(int argc, char* argv[]) {
   const size_t dims = sizeof(a_shape) / sizeof(long int);
 
   // Prints array in correct form.
-  print_column_major<dims>(a_cpu, a_shape);
+  print_column_major<int, dims>(a_cpu, a_shape);
 
   int *a_gpu;
   cudaMalloc(&a_gpu, sizeof(a_cpu));
@@ -92,7 +97,7 @@ int main(int argc, char* argv[]) {
 
   // Use stride to read correctly.
   std::cout << "Converting vector to Torch tensors on CPU with stride" << std::endl;
-  std::cout << array_to_tensor<dims>(device, a_gpu, a_shape) << std::endl;
+  std::cout << array_to_tensor<int, dims>(device, a_gpu, a_shape) << std::endl;
 
   long int b_shape[] = {500, 1000};
   int b[b_shape[0]][b_shape[1]];
@@ -111,7 +116,7 @@ int main(int argc, char* argv[]) {
 
   auto t1 = high_resolution_clock::now();
   const size_t dim_b = sizeof(b_shape) / sizeof(long int);
-  torch::Tensor tensor_stride = array_to_tensor<dim_b>(device, b_gpu, b_shape);
+  torch::Tensor tensor_stride = array_to_tensor<int, dim_b>(device, b_gpu, b_shape);
   auto t2 = high_resolution_clock::now();
   duration<double, std::milli> ms_double = t2 - t1;
   std::cout << "Stride:" << ms_double.count() << "ms\n";
