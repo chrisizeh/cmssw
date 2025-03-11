@@ -66,39 +66,43 @@ void print_column_major(T* arr, const long int* size) {
 }
 
 
+template <typename T, std::size_t N, std::size_t M>
+void run(torch::Device device, torch::jit::script::Module model, T* input, const long int input_shape[N], T* output, const long int output_shape[M]) {
+  torch::Tensor input_tensor = array_to_tensor<T, N>(device, input, input_shape);
+
+  std::vector<torch::jit::IValue> inputs{input_tensor};
+  auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
+  torch::from_blob(output, output_shape, options) = model.forward(inputs).toTensor();
+}
+
+
 void testSOAToTorch::test() {
   torch::Device device(torch::kCUDA);
 
   float input_cpu[] = {1, 4, 1, 2, 3, 2, 1, 3, 3, 2, 4, 2};
-  long int shape[] = {3, 4};
-  const size_t dims = 2;
+  const long int shape[] = {3, 4};
 
   std::array<float, 3> result_cpu{};
   std::array<float, 3> result_check{{3.1f, 7.8f, 7.1f}};
+  const long int result_shape[] = {1, 3};
 
   // Prints array in correct form.
-  print_column_major<float, dims>(input_cpu, shape);
+  print_column_major<float, 2>(input_cpu, shape);
 
   float *input_gpu, *result_gpu;
   cudaMalloc(&input_gpu, sizeof(input_cpu));
   cudaMalloc(&result_gpu, sizeof(result_cpu));
-  cudaMemcpy(input_gpu, input_cpu, sizeof(input_cpu), cudaMemcpyHostToDevice);
-
-  // Use stride to read correctly.
-  std::cout << "Converting vector to Torch tensors on CPU with stride" << std::endl;
-  torch::Tensor input_tensor = array_to_tensor<float, dims>(device, input_gpu, shape);
-
-  // Load the TorchScript model
-  std::string model_path = dataPath_ + "/linear_dnn.pt";
+  cudaMemcpy(input_gpu, input_cpu, sizeof(input_cpu), cudaMemcpyHostToDevice); 
 
   torch::jit::script::Module model;
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
+    std::string model_path = dataPath_ + "/linear_dnn.pt";
     model = torch::jit::load(model_path);
     model.to(device);
-    std::vector<torch::jit::IValue> inputs{input_tensor};
-    auto options = torch::TensorOptions().dtype(torch::kFloat).device(device).pinned_memory(true);
-    torch::from_blob(result_gpu, {3, 1}, options) = model.forward(inputs).toTensor();
+
+    // Call function to build tensor and run model
+    run<float, 2, 2>(device, model, input_gpu, shape, result_gpu, result_shape);
 
   } catch (const c10::Error& e) {
     std::cerr << "error loading the model\n" << e.what() << std::endl;
