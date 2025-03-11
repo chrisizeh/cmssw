@@ -67,12 +67,16 @@ void print_column_major(T* arr, const long int* size) {
 
 
 template <typename T, std::size_t N, std::size_t M>
-void run(torch::Device device, torch::jit::script::Module model, T* input, const long int input_shape[N], T* output, const long int output_shape[M]) {
+void run(torch::Device device, torch::jit::script::Module model, T* input, const long int* input_shape, T* output, const long int* output_shape) {
   torch::Tensor input_tensor = array_to_tensor<T, N>(device, input, input_shape);
+
+  // from_blod doesn't work if use array from parameter list
+  long int res_shape[M];
+  std::copy(output_shape, output_shape+M, res_shape);
 
   std::vector<torch::jit::IValue> inputs{input_tensor};
   auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
-  torch::from_blob(output, output_shape, options) = model.forward(inputs).toTensor();
+  torch::from_blob(output, res_shape, options) = model.forward(inputs).toTensor();
 }
 
 
@@ -84,7 +88,7 @@ void testSOAToTorch::test() {
 
   std::array<float, 3> result_cpu{};
   std::array<float, 3> result_check{{3.1f, 7.8f, 7.1f}};
-  const long int result_shape[] = {1, 3};
+  const long int result_shape[] = {3, 1};
 
   // Prints array in correct form.
   print_column_major<float, 2>(input_cpu, shape);
