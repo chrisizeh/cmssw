@@ -19,10 +19,33 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
+#include "DataFormats/SoATemplate/interface/SoALayout.h"
+#include "DataFormats/Portable/interface/PortableCollection.h"
+#include "DataFormats/Portable/interface/PortableHostCollection.h"
+
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 using std::cout;
 using std::endl;
+
+// Input SOA
+GENERATE_SOA_LAYOUT(SoAPositionTemplate,
+  SOA_COLUMN(float, x),
+  SOA_COLUMN(float, y),
+  SOA_COLUMN(float, z))
+
+using SoAPosition = SoAPositionTemplate<>;
+using SoAPositionView = SoAPosition::View;
+using SoAPositionConstView = SoAPosition::ConstView;
+
+
+// Output SOA
+GENERATE_SOA_LAYOUT(SoAResultTemplate,
+  SOA_COLUMN(float, x),
+  SOA_COLUMN(float, y))
+
+using SoAResult = SoAResultTemplate<>;
+using SoAResultView = SoAResult::View;
 
 class testSOAToTorch : public testBasePyTorch {
   CPPUNIT_TEST_SUITE(testSOAToTorch);
@@ -38,52 +61,32 @@ CPPUNIT_TEST_SUITE_REGISTRATION(testSOAToTorch);
 
 std::string testSOAToTorch::pyScript() const { return "create_linear_dnn.py"; }
 
+// Create tensor from SOA based on size = {row, column} and alignment
 template <typename T, std::size_t N>
-torch::Tensor array_to_tensor(torch::Device device, T* arr, const long int* size) {
+torch::Tensor array_to_tensor(torch::Device device, std::byte* arr, const long int* size, size_t alignment) {
   long int arr_size[N];
   long int arr_stride[N];
   std::copy(size, size+N, arr_size);
   std::copy(size, size+N, arr_stride);
+  int per_column = alignment/sizeof(T);
 
-  std::shift_right(std::begin(arr_stride), std::end(arr_stride), 1);
   arr_stride[0] = 1;
-  arr_stride[N-1] *= arr_stride[N-2];
+  for (size_t i = 1; i < N; i++) {
+    arr_stride[i] = arr_stride[i-1]*per_column;
+  }
 
   auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
   return torch::from_blob(arr, arr_size, arr_stride, options);
 }
 
-template <typename T, std::size_t N>
-void print_column_major(T* arr, const long int* size) {
-  if (N == 2) {
-    for (int i = 0; i < size[0]; i++) {
-      for (int j = 0; j < size[1]; j++) {
-          std::cout << arr[i + j*size[0]] << " ";
-      }
-      std::cout << std::endl;
-    } 
-  } else if (N == 3) {
-    for (int i = 0; i < size[0]; i++) {
-      std::cout << "(" << i << ", .., ..)" << std::endl;
-      for (int j = 0; j < size[1]; j++) {
-        for (int k = 0; k < size[2]; k++) {
-          std::cout << arr[i + j*size[0] + k*size[0]*size[1]] << " ";
-        }
-        std::cout << std::endl;
-      } 
-      std::cout << std::endl;
-    }
-  }
-  std::cout << std::endl;
-}
 
-
+// Build Tensor, run model end return pointer to buffer with correct alignment
 template <typename T, std::size_t N, std::size_t M>
-void run(torch::Device device, torch::jit::script::Module model, T* input, const long int* input_shape, T* output, const long int* output_shape) {
-  torch::Tensor input_tensor = array_to_tensor<T, N>(device, input, input_shape);
+void run(torch::Device device, torch::jit::script::Module model, std::byte* input, const long int* input_shape, size_t input_alignment, std::byte* output, const long int* output_shape, size_t output_alignment) {
+  torch::Tensor input_tensor = array_to_tensor<T, N>(device, input, input_shape, input_alignment);
 
   std::vector<torch::jit::IValue> inputs{input_tensor};
-  array_to_tensor<T, M>(device, output, output_shape) = model.forward(inputs).toTensor();
+  array_to_tensor<T, M>(device, output, output_shape, output_alignment) = model.forward(inputs).toTensor();
 }
 
 
@@ -99,7 +102,7 @@ void testSOAToTorch::test() {
   } catch (...) {
   }
   Platform platform;
-  auto alpakaDevices = alpaka::getDevs(platform);
+  std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
   idx = 0;
   for (const auto& d : alpakaDevices) {
     cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << endl;
@@ -113,29 +116,29 @@ void testSOAToTorch::test() {
        << " and native handle=" << alpakaDevice.getNativeHandle() << endl;
   torch::Device torchDevice(torch_common::kDeviceType, alpakaDevice.getNativeHandle());
 
+  // Number of elements
+  const std::size_t batch_size = 4;
 
   std::vector<float> input{{1, 2, 3, 2, 2, 4, 4, 3, 1, 3, 1, 2}};
   const long int shape[] = {4, 3};
-  const int size_input = 12;
 
-  auto input_cpu = cms::alpakatools::make_host_buffer<float[]>(queue, size_input);
-  for (int i = 0; i < size_input; ++i) {
-    input_cpu[i] = input[i];
-  }
-
-  // Prints array in correct form.
-  std::cout << "Input Matrix:" << std::endl;
-  print_column_major<float, 2>(input_cpu.data(), shape);
-
-  const int size_result = 8;
-  std::array<float, size_result> result_cpu{};
-  // float result_cpu[size_result];
   float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
   const long int result_shape[] = {4, 2};
 
-  auto result_gpu = cms::alpakatools::make_device_buffer<float[]>(queue, size_result);
-  auto input_gpu = cms::alpakatools::make_device_buffer<float[]>(queue, size_input);
-  alpaka::memcpy(queue, input_gpu, input_cpu);
+  // Create and fill needed portable collections
+  PortableHostCollection<SoAPosition> positionHostCollection(batch_size, cms::alpakatools::host());
+  PortableCollection<SoAPosition, Device> positionCollection(batch_size, alpakaDevice);
+  SoAPositionView& positionCollectionView = positionHostCollection.view();
+  
+  for (size_t i = 0; i < batch_size; i++) {
+    positionCollectionView.x()[i] = input[i];
+    positionCollectionView.y()[i] = input[i + 1*batch_size];
+    positionCollectionView.z()[i] = input[i + 2*batch_size];  
+  }
+  alpaka::memcpy(queue, positionCollection.buffer(), positionHostCollection.buffer());
+
+  PortableHostCollection<SoAResult> resultHostCollection(batch_size, cms::alpakatools::host());
+  PortableCollection<SoAResult, Device> resultCollection(batch_size, alpakaDevice);
 
   torch::jit::script::Module model;
   try {
@@ -149,19 +152,20 @@ void testSOAToTorch::test() {
   }
   
   // Call function to build tensor and run model
-  run<float, 2, 2>(torchDevice, model, input_gpu.data(), shape, result_gpu.data(), result_shape);
+  run<float, 2, 2>(torchDevice, model, positionCollection.buffer().data(), shape, SoAPosition::alignment, resultCollection.buffer().data(), result_shape, SoAResult::alignment);
 
-  // // Compare if values are the same as for python script
-  alpaka::memcpy(queue, result_cpu, result_gpu);
+  // Compare if values are the same as for python script
+  alpaka::memcpy(queue, resultHostCollection.buffer(), resultCollection.buffer());
   alpaka::wait(queue);
 
-  std::cout << "Output Matrix:" << std::endl;
-  print_column_major<float, 2>(result_cpu.data(), result_shape);
+  SoAResultView& resultView = resultHostCollection.view();
 
-  for (int i = 0; i < result_shape[0]; i++) {
-    for (int j = 0; j < result_shape[1]; j++) {
-      CPPUNIT_ASSERT(std::abs(result_cpu[i + j*result_shape[0]] - result_check[i][j]) <= 1.0e-05);
-    }
+  std::cout << "Output Matrix:" << std::endl;
+  for (size_t i = 0; i < batch_size; i++) {
+    std::cout << resultView.x()[i] << " " << resultView.y()[i] << std::endl;
+
+    CPPUNIT_ASSERT(std::abs(resultView.x()[i] - result_check[i][0]) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(resultView.y()[i] - result_check[i][1]) <= 1.0e-05);
   }
   
 
