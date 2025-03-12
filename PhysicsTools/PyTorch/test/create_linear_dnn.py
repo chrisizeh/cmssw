@@ -17,7 +17,7 @@ class LinearModel(torch.nn.Module):
         
         self.linear = torch.nn.Linear(N, M, bias=False)
         with torch.no_grad():
-            self.linear.weight.data[...] = torch.Tensor([[-0.1, 0.2, 2, 0.4]])
+            self.linear.weight.data[...] = torch.Tensor([[-0.1, 0.2, 2], [0.1, -2.3, 4.0]])
         
     def forward(self, x):
         x = self.linear(x)
@@ -25,8 +25,8 @@ class LinearModel(torch.nn.Module):
         return x
 
 
-module = LinearModel(4, 1)
-x = torch.tensor([[1., 2., 1., 2.], [4., 3., 3., 4.], [1., 2., 3., 2.]])
+module = LinearModel(3, 2)
+x = torch.tensor([[1., 2., 1.], [2., 4., 3.], [3., 4., 1.], [2., 3., 2.]])
 print(module(x))
 
 tm = torch.jit.trace(module.eval(), x)

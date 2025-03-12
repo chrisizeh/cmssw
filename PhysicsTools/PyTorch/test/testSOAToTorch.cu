@@ -63,6 +63,7 @@ void print_column_major(T* arr, const long int* size) {
       std::cout << std::endl;
     }
   }
+  std::cout << std::endl;
 }
 
 
@@ -76,19 +77,20 @@ void run(torch::Device device, torch::jit::script::Module model, T* input, const
 
   std::vector<torch::jit::IValue> inputs{input_tensor};
   auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
+  // RESULT IS IN ROW MAJOR
   torch::from_blob(output, res_shape, options) = model.forward(inputs).toTensor();
 }
 
 
 void testSOAToTorch::test() {
   torch::Device device(torch::kCUDA);
+  
+  float input_cpu[] = {1, 2, 3, 2, 2, 4, 4, 3, 1, 3, 1, 2};
+  const long int shape[] = {4, 3};
 
-  float input_cpu[] = {1, 4, 1, 2, 3, 2, 1, 3, 3, 2, 4, 2};
-  const long int shape[] = {3, 4};
-
-  std::array<float, 3> result_cpu{};
-  std::array<float, 3> result_check{{3.1f, 7.8f, 7.1f}};
-  const long int result_shape[] = {3, 1};
+  float result_cpu[4][2];
+  float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
+  const long int result_shape[] = {4, 2};
 
   // Prints array in correct form.
   print_column_major<float, 2>(input_cpu, shape);
@@ -105,17 +107,20 @@ void testSOAToTorch::test() {
     model = torch::jit::load(model_path);
     model.to(device);
 
-    // Call function to build tensor and run model
-    run<float, 2, 2>(device, model, input_gpu, shape, result_gpu, result_shape);
 
   } catch (const c10::Error& e) {
     std::cerr << "error loading the model\n" << e.what() << std::endl;
   }
+  
+  // Call function to build tensor and run model
+  run<float, 2, 2>(device, model, input_gpu, shape, result_gpu, result_shape);
 
   // Compare if values are the same as for python script
-  cudaMemcpy(result_cpu.data(), result_gpu, sizeof(result_cpu), cudaMemcpyDeviceToHost);
-  for (int i = 0; i < 3; i++) {
-    CPPUNIT_ASSERT(std::abs(result_cpu[i] - result_check[i]) <= 1.0e-05);
+  cudaMemcpy(result_cpu, result_gpu, sizeof(result_cpu), cudaMemcpyDeviceToHost);
+  for (int i = 0; i < result_shape[0]; i++) {
+    for (int j = 0; j < result_shape[1]; j++) {
+      CPPUNIT_ASSERT(std::abs(result_cpu[i][j] - result_check[i][j]) <= 1.0e-05);
+    }
   }
 
 }
