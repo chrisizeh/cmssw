@@ -37,9 +37,7 @@ torch::Tensor array_to_tensor(torch::Device device, T* arr, const long int* size
   arr_stride[N-1] *= arr_stride[N-2];
 
   auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
-  torch::Tensor tensor = torch::from_blob(arr, arr_size, arr_stride, options);
-
-  return tensor;
+  return torch::from_blob(arr, arr_size, arr_stride, options);
 }
 
 template <typename T, std::size_t N>
@@ -76,9 +74,7 @@ void run(torch::Device device, torch::jit::script::Module model, T* input, const
   std::copy(output_shape, output_shape+M, res_shape);
 
   std::vector<torch::jit::IValue> inputs{input_tensor};
-  auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
-  // RESULT IS IN ROW MAJOR
-  torch::from_blob(output, res_shape, options) = model.forward(inputs).toTensor();
+  array_to_tensor<T, M>(device, output, output_shape) = model.forward(inputs).toTensor();
 }
 
 
@@ -88,9 +84,9 @@ void testSOAToTorch::test() {
   float input_cpu[] = {1, 2, 3, 2, 2, 4, 4, 3, 1, 3, 1, 2};
   const long int shape[] = {4, 3};
 
-  float result_cpu[4][2];
-  float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
   const long int result_shape[] = {4, 2};
+  float result_cpu[result_shape[0]*result_shape[1]];
+  float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
 
   // Prints array in correct form.
   print_column_major<float, 2>(input_cpu, shape);
@@ -119,7 +115,7 @@ void testSOAToTorch::test() {
   cudaMemcpy(result_cpu, result_gpu, sizeof(result_cpu), cudaMemcpyDeviceToHost);
   for (int i = 0; i < result_shape[0]; i++) {
     for (int j = 0; j < result_shape[1]; j++) {
-      CPPUNIT_ASSERT(std::abs(result_cpu[i][j] - result_check[i][j]) <= 1.0e-05);
+      CPPUNIT_ASSERT(std::abs(result_cpu[i + j*result_shape[0]] - result_check[i][j]) <= 1.0e-05);
     }
   }
 

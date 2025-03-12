@@ -100,6 +100,7 @@
   <use name="pytorch-cuda"/>
 </bin>
 
+<iftool name="cuda">
 <bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
   <use name="boost_filesystem"/>
   <use name="catch2"/>
@@ -115,7 +116,9 @@
   <use name="HeterogeneousCore/CUDAServices"/>
   <use name="HeterogeneousCore/CUDAUtilities"/>
 </bin>
+</iftool>
 
+<iftool name="cuda">
 <bin name="testSOAToTorch" file="testRunner.cc,testSOAToTorch.cu">
   <use name="boost_filesystem"/>
   <use name="catch2"/>
@@ -130,6 +133,16 @@
   <use name="FWCore/Utilities"/>
   <use name="HeterogeneousCore/CUDAServices"/>
   <use name="HeterogeneousCore/CUDAUtilities"/>
+</bin>
+</iftool>
+
+<bin file="alpaka/testSOAtoTorch.cc testRunner.cc" name="testSOAToTorch-alpaka">
+  <use name="boost_filesystem"/>
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <flags ALPAKA_BACKENDS="1"/>
 </bin>
 
 
