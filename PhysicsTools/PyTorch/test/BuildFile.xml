@@ -154,6 +154,15 @@
   <flags ALPAKA_BACKENDS="1"/>
 </bin>
 
+<bin file="alpaka/testSOADataTypes.cc testRunner.cc" name="testSOADatatypes-alpaka">
+  <use name="boost_filesystem"/>
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <flags ALPAKA_BACKENDS="1"/>
+</bin>
+
 
 <bin file="alpaka/testTorchMTMS.cc testRunner.cc" name="testTorchMTMS-alpaka">
   <use name="boost_filesystem"/>

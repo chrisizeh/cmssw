@@ -164,9 +164,6 @@ void testSOAStride::test_multi_bunch() {
   torch::Tensor tensor = array_to_tensor<int, 2>(device, positionCollection.buffer().data(), size.data(), stride.data());
 
   for (size_t i = 0; i < batch_size; i++) {
-    // CPPUNIT_ASSERT(std::abs(positionCollectionView.x()[i] - tensor[i][0].item<int>()) <= 1.0e-05);
-    // CPPUNIT_ASSERT(std::abs(positionCollectionView.y()[i] - tensor[i][1].item<int>()) <= 1.0e-05);
-    // CPPUNIT_ASSERT(std::abs(positionCollectionView.z()[i] - tensor[i][2].item<float>()) <= 1.0e-05);
     CPPUNIT_ASSERT(positionCollectionView.x()[i] - tensor[i][0].item<int>() == 0);
     CPPUNIT_ASSERT(positionCollectionView.y()[i] - tensor[i][1].item<int>() == 0);
     CPPUNIT_ASSERT(positionCollectionView.z()[i] - tensor[i][2].item<int>() == 0);
@@ -214,5 +211,9 @@ void testSOAStride::test_pose_SOA() {
     CPPUNIT_ASSERT(std::abs(poseCollectionView.x()[i] - tensor[i][0].item<double>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(poseCollectionView.y()[i] - tensor[i][1].item<double>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(poseCollectionView.z()[i] - tensor[i][2].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(poseCollectionView.phi()[i] - tensor[i][3].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(poseCollectionView.psi()[i] - tensor[i][4].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(poseCollectionView.theta()[i] - tensor[i][5].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(poseCollectionView.t()[i] - tensor[i][6].item<double>()) <= 1.0e-05);
   }
 }
