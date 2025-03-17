@@ -119,7 +119,7 @@
 </iftool>
 
 <iftool name="cuda">
-<bin name="testSOAToTorch" file="testRunner.cc,testSOAToTorch.cu">
+<bin name="testSOAToTorch" file="testRunner.cc,testTensorStride.cu">
   <use name="boost_filesystem"/>
   <use name="catch2"/>
   <use name="cppunit"/>

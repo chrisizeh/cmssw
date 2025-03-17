@@ -23,10 +23,9 @@
 #include "DataFormats/Portable/interface/PortableCollection.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 
-using namespace ALPAKA_ACCELERATOR_NAMESPACE;
+#include "../Converter.h"
 
-using std::cout;
-using std::endl;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 // Input SOA
 GENERATE_SOA_LAYOUT(SoAPositionTemplate,
@@ -61,6 +60,16 @@ CPPUNIT_TEST_SUITE_REGISTRATION(testSOAToTorch);
 
 std::string testSOAToTorch::pyScript() const { return "create_linear_dnn.py"; }
 
+class ModelMask {
+  public: 
+    int nElements;
+
+    MaskElement input;
+    MaskElement output;
+
+    ModelMask(int nElements_, MaskElement input_, MaskElement output_) : nElements(nElements_), input(input_), output(output_) { }
+};
+
 // Create tensor from SOA based on size = {row, column} and alignment
 template <typename T, std::size_t N>
 torch::Tensor array_to_tensor(torch::Device device, std::byte* arr, const long int* size, size_t alignment) {
@@ -81,49 +90,36 @@ torch::Tensor array_to_tensor(torch::Device device, std::byte* arr, const long i
 
 
 // Build Tensor, run model end return pointer to buffer with correct alignment
-template <typename T, std::size_t N, std::size_t M>
-void run(torch::Device device, torch::jit::script::Module model, std::byte* input, const long int* input_shape, size_t input_alignment, std::byte* output, const long int* output_shape, size_t output_alignment) {
-  torch::Tensor input_tensor = array_to_tensor<T, N>(device, input, input_shape, input_alignment);
+template <typename SOA_Input, typename SOA_Output>
+void run(torch::Device device, torch::jit::script::Module model, ModelMask mask, std::byte* input, std::byte* output) {
+  torch::Tensor input_tensor = Converter<SOA_Input>::convert_single(mask.nElements, mask.input, device, input);
 
   std::vector<torch::jit::IValue> inputs{input_tensor};
-  array_to_tensor<T, M>(device, output, output_shape, output_alignment) = model.forward(inputs).toTensor();
+  Converter<SOA_Output>::convert_single(mask.nElements, mask.output, device, output) = model.forward(inputs).toTensor();
 }
 
 
 void testSOAToTorch::test() {
-  cout << "ALPAKA Platform info:" << endl;
-  int idx = 0;
-  try {
-    for (;;) {
-      alpaka::Platform<alpaka::DevCpu> platformHost;
-      alpaka::DevCpu host = alpaka::getDevByIdx(platformHost, idx);
-      cout << "Host[" << idx++ << "]:   " << alpaka::getName(host) << endl;
-    }
-  } catch (...) {
-  }
   Platform platform;
   std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-  idx = 0;
+  int idx = 0;
   for (const auto& d : alpakaDevices) {
-    cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << endl;
+    std::cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << std::endl;
   }
   const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
   CPPUNIT_ASSERT(alpakaDevices.size());
   const auto& alpakaDevice = alpakaDevices[0];
   Queue queue{alpakaDevice};
 
-  cout << "Will create torch device with type=" << torch_common::kDeviceType
-       << " and native handle=" << alpakaDevice.getNativeHandle() << endl;
+  std::cout << "Will create torch device with type=" << torch_common::kDeviceType
+       << " and native handle=" << alpakaDevice.getNativeHandle() << std::endl;
   torch::Device torchDevice(torch_common::kDeviceType, alpakaDevice.getNativeHandle());
 
   // Number of elements
   const std::size_t batch_size = 4;
 
   std::vector<float> input{{1, 2, 3, 2, 2, 4, 4, 3, 1, 3, 1, 2}};
-  const long int shape[] = {4, 3};
-
   float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
-  const long int result_shape[] = {4, 2};
 
   // Create and fill needed portable collections
   PortableHostCollection<SoAPosition> positionHostCollection(batch_size, cms::alpakatools::host());
@@ -152,7 +148,8 @@ void testSOAToTorch::test() {
   }
   
   // Call function to build tensor and run model
-  run<float, 2, 2>(torchDevice, model, positionCollection.buffer().data(), shape, SoAPosition::alignment, resultCollection.buffer().data(), result_shape, SoAResult::alignment);
+  ModelMask mask(batch_size, {torch::kFloat, 3, true}, {torch::kFloat, 2, true});
+  run<SoAPosition, SoAResult>(torchDevice, model, mask, positionCollection.buffer().data(), resultCollection.buffer().data());
 
   // Compare if values are the same as for python script
   alpaka::memcpy(queue, resultHostCollection.buffer(), resultCollection.buffer());
