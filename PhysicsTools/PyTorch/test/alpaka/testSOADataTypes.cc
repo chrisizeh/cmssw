@@ -85,32 +85,29 @@ class Mask {
 template <typename SOA_Layout>
 class Converter {
   public:
-
-    Converter(Mask& mask_) : mask(mask_) { };
-    std::vector<torch::Tensor> convert(torch::Device device, std::byte* arr);
+    static std::vector<torch::Tensor> convert_multiple(Mask mask, torch::Device device, std::byte* arr);
+    static torch::Tensor convert_single(int nElements, MaskElement element, torch::Device device, std::byte* arr);
 
   private:
-    Mask mask;
-
-    std::array<long int, 2> soa_get_stride(int bytes);
-    std::array<long int, 2> soa_get_size(int bytes);
+    static std::array<long int, 2> soa_get_stride(int nElements, int bytes);
+    static std::array<long int, 2> soa_get_size(int nElements, int bytes);
 
     template <size_t N>
-    torch::Tensor array_to_tensor(torch::Device device, torch::ScalarType type, std::byte* arr, const long int* size, const long int* stride);
+    static torch::Tensor array_to_tensor(torch::Device device, torch::ScalarType type, std::byte* arr, const long int* size, const long int* stride);
 
 };
 
 template <typename SOA_Layout>
-std::array<long int, 2> Converter<SOA_Layout>::soa_get_stride(int bytes) {
+std::array<long int, 2> Converter<SOA_Layout>::soa_get_stride(int nElements, int bytes) {
   int per_bunch = SOA_Layout::alignment/bytes;
-  int bunches = std::ceil(1.0 * mask.nElements/per_bunch);
+  int bunches = std::ceil(1.0 * nElements/per_bunch);
   std::array<long int, 2> stride{{1, bunches * per_bunch}};
   return stride;
 }
 
 template <typename SOA_Layout>
-std::array<long int, 2> Converter<SOA_Layout>::soa_get_size(int cols) {
-  std::array<long int, 2> size{{mask.nElements, cols}};
+std::array<long int, 2> Converter<SOA_Layout>::soa_get_size(int nElements, int cols) {
+  std::array<long int, 2> size{{nElements, cols}};
   return size;
 }
 
@@ -127,28 +124,38 @@ torch::Tensor Converter<SOA_Layout>::array_to_tensor(torch::Device device, torch
 }
 
 template <typename SOA_Layout>
-std::vector<torch::Tensor> Converter<SOA_Layout>::convert(torch::Device device, std::byte* arr) {
+std::vector<torch::Tensor> Converter<SOA_Layout>::convert_multiple(Mask mask, torch::Device device, std::byte* arr) {
   std::vector<torch::Tensor> tensors;
   int skip = 0;
   std::array<long int, 2> stride;
   std::array<long int, 2> size;
   torch::Tensor tensor;
 
-  for (int i = 0; i < this->mask.nBlocks; i++) {
+  for (int i = 0; i < mask.nBlocks; i++) {
     std::cout << "Block " << i << std::endl;
-    stride = this->soa_get_stride(mask[i].bytes);
+    stride = Converter<SOA_Layout>::soa_get_stride(mask.nElements, mask[i].bytes);
     std::cout << "Stride: {" << stride[0] << ", " << stride[1] << "}" << std::endl;
 
     if(mask[i].used) {
-      size = this->soa_get_size(mask[i].columns);
+      size = Converter<SOA_Layout>::soa_get_size(mask.nElements, mask[i].columns);
       std::cout << "Size: {" << size[0] << ", " << size[1] << "}" << std::endl;
 
-      tensor = this->array_to_tensor<2>(device, mask[i].type, arr+skip, size.data(), stride.data());
+      tensor = Converter<SOA_Layout>::array_to_tensor<2>(device, mask[i].type, arr+skip, size.data(), stride.data());
       tensors.push_back(tensor);
     }
     skip += mask[i].columns * stride[1] * mask[i].bytes;
   }
   return tensors;
+}
+
+template <typename SOA_Layout>
+torch::Tensor Converter<SOA_Layout>::convert_single(int nElements, MaskElement mask, torch::Device device, std::byte* arr) {
+  std::array<long int, 2> stride = Converter<SOA_Layout>::soa_get_stride(nElements, mask.bytes);
+  std::cout << "Stride: {" << stride[0] << ", " << stride[1] << "}" << std::endl;
+  std::array<long int, 2> size = Converter<SOA_Layout>::soa_get_size(nElements, mask.columns);
+  std::cout << "Size: {" << size[0] << ", " << size[1] << "}" << std::endl;
+
+  return Converter<SOA_Layout>::array_to_tensor<2>(device, mask.type, arr, size.data(), stride.data());
 }
 
 
@@ -177,8 +184,7 @@ void testSOADataTypes::test_pose_SOA() {
   }
 
   Mask mask(batch_size, {{torch::kDouble, torch::kInt, torch::kFloat}}, {{3, 1, 3}}, {{true, false, true}});
-  Converter<SoAPose> converter(mask);
-  std::vector<torch::Tensor> result = converter.convert(device, poseCollection.buffer().data());
+  std::vector<torch::Tensor> result = Converter<SoAPose>::convert_multiple(mask, device, poseCollection.buffer().data());
   std::cout << "Length of result vector: " << result.size() << std::endl;
   CPPUNIT_ASSERT(result.size() == 2);
 
@@ -193,6 +199,15 @@ void testSOADataTypes::test_pose_SOA() {
     CPPUNIT_ASSERT(std::abs(poseCollectionView.phi()[i] - result[1][i][0].item<float>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(poseCollectionView.psi()[i] - result[1][i][1].item<float>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(poseCollectionView.theta()[i] - result[1][i][2].item<float>()) <= 1.0e-05);
+  }
+
+  torch::Tensor tensor = Converter<SoAPose>::convert_single(batch_size, MaskElement(torch::kDouble, 3, true), device, poseCollection.buffer().data());
+  std::cout << tensor << std::endl;
+
+  for (size_t i = 0; i < batch_size; i++) {
+    CPPUNIT_ASSERT(std::abs(poseCollectionView.x()[i] - tensor[i][0].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(poseCollectionView.y()[i] - tensor[i][1].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(poseCollectionView.z()[i] - tensor[i][2].item<double>()) <= 1.0e-05);
   }
 
 };
