@@ -70,26 +70,7 @@ class ModelMask {
     ModelMask(int nElements_, MaskElement input_, MaskElement output_) : nElements(nElements_), input(input_), output(output_) { }
 };
 
-// Create tensor from SOA based on size = {row, column} and alignment
-template <typename T, std::size_t N>
-torch::Tensor array_to_tensor(torch::Device device, std::byte* arr, const long int* size, size_t alignment) {
-  long int arr_size[N];
-  long int arr_stride[N];
-  std::copy(size, size+N, arr_size);
-  std::copy(size, size+N, arr_stride);
-  int per_column = alignment/sizeof(T);
-
-  arr_stride[0] = 1;
-  for (size_t i = 1; i < N; i++) {
-    arr_stride[i] = arr_stride[i-1]*per_column;
-  }
-
-  auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
-  return torch::from_blob(arr, arr_size, arr_stride, options);
-}
-
-
-// Build Tensor, run model end return pointer to buffer with correct alignment
+// Build Tensor, run model and fill output pointer with result
 template <typename SOA_Input, typename SOA_Output>
 void run(torch::Device device, torch::jit::script::Module model, ModelMask mask, std::byte* input, std::byte* output) {
   torch::Tensor input_tensor = Converter<SOA_Input>::convert_single(mask.nElements, mask.input, device, input);

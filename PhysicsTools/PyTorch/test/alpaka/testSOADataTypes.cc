@@ -24,8 +24,6 @@
 
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
-// Next Steps: Create Class and improve readability and user handling
-
 class testSOADataTypes : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testSOADataTypes);
   CPPUNIT_TEST(test_multiple_SOA);
