@@ -28,14 +28,14 @@
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
 
 // Input SOA
-GENERATE_SOA_LAYOUT(SoAPositionTemplate, SOA_COLUMN(float, x), SOA_COLUMN(float, y), SOA_COLUMN(float, z))
+GENERATE_SOA_LAYOUT(SoAPositionTemplate, SOA_COLUMN(float, x), SOA_COLUMN(float, y))
 
 using SoAPosition = SoAPositionTemplate<>;
 using SoAPositionView = SoAPosition::View;
 using SoAPositionConstView = SoAPosition::ConstView;
 
 // Output SOA
-GENERATE_SOA_LAYOUT(SoAResultTemplate, SOA_COLUMN(float, x), SOA_COLUMN(float, y))
+GENERATE_SOA_LAYOUT(SoAResultTemplate, SOA_COLUMN(float, x))
 
 using SoAResult = SoAResultTemplate<>;
 using SoAResultView = SoAResult::View;
@@ -52,18 +52,21 @@ public:
 
 CPPUNIT_TEST_SUITE_REGISTRATION(testSOAToTorch);
 
-std::string testSOAToTorch::pyScript() const { return "create_linear_dnn.py"; }
+std::string testSOAToTorch::pyScript() const { return "create_dnn_sum.py"; }
 
-// Build Tensor, run model and fill output pointer with result
 template <typename SOA_Input, typename SOA_Output>
-void run(torch::Device device,
-         torch::jit::script::Module model,
-         ModelMetadata metadata,
-         std::byte* input,
-         std::byte* output) {
-  std::vector<torch::jit::IValue> input_tensor = Converter<SOA_Input>::convert_input(metadata, device, input);
+void run_multi(
+    torch::Device device, torch::jit::script::Module model, ModelMetadata mask, std::byte* input, std::byte* output) {
+  std::vector<torch::IValue> input_tensors = Converter<SOA_Input>::convert_input(mask, device, input);
 
-  Converter<SOA_Output>::convert_output(metadata, device, output) = model.forward(input_tensor).toTensor();
+  // std::vector<torch::jit::IValue> inputs;
+  // inputs.reserve(input_tensors.size());
+
+  // for (size_t i = 0; i < input_tensors.size(); i++) {
+  //   inputs.push_back(input_tensors[mask.mapping[i]]);
+  // }
+
+  Converter<SOA_Output>::convert_output(mask, device, output) = model.forward(input_tensors).toTensor();
 }
 
 void testSOAToTorch::test() {
@@ -79,6 +82,7 @@ void testSOAToTorch::test() {
   }
   Platform platform;
   std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
+  idx = 0;
   for (const auto& d : alpakaDevices) {
     std::cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << std::endl;
   }
@@ -92,10 +96,10 @@ void testSOAToTorch::test() {
   torch::Device torchDevice(torch_common::kDeviceType);
 
   // Number of elements
-  const std::size_t batch_size = 4;
+  const std::size_t batch_size = 6;
 
   std::vector<float> input{{1, 2, 3, 2, 2, 4, 4, 3, 1, 3, 1, 2}};
-  float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
+  std::array<float, 6> result_check{{5, 5, 4, 5, 3, 6}};
 
   // Create and fill needed portable collections
   PortableHostCollection<SoAPosition> positionHostCollection(batch_size, cms::alpakatools::host());
@@ -105,7 +109,6 @@ void testSOAToTorch::test() {
   for (size_t i = 0; i < batch_size; i++) {
     positionCollectionView.x()[i] = input[i];
     positionCollectionView.y()[i] = input[i + 1 * batch_size];
-    positionCollectionView.z()[i] = input[i + 2 * batch_size];
   }
   alpaka::memcpy(queue, positionCollection.buffer(), positionHostCollection.buffer());
 
@@ -115,7 +118,7 @@ void testSOAToTorch::test() {
   torch::jit::script::Module model;
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
-    std::string model_path = dataPath_ + "/linear_dnn.pt";
+    std::string model_path = dataPath_ + "/simple_dnn_sum.pt";
     model = torch::jit::load(model_path);
     model.to(torchDevice);
 
@@ -123,11 +126,12 @@ void testSOAToTorch::test() {
     std::cerr << "error loading the model\n" << e.what() << std::endl;
   }
 
-  // Call function to build tensor and run model
-  InputMetadata inputMask(torch::kFloat, 3);
-  ModelMetadata mask(batch_size, inputMask, OutputMetadata(torch::kFloat, 2));
+  // Prepare SOA Mask
+  InputMetadata inputMask({torch::kFloat, torch::kFloat}, {1, 1}, {1, 0});
+  ModelMetadata mask(batch_size, inputMask, OutputMetadata(torch::kFloat, 1));
 
-  run<SoAPosition, SoAResult>(
+  // Call function to build tensor and run model
+  run_multi<SoAPosition, SoAResult>(
       torchDevice, model, mask, positionCollection.buffer().data(), resultCollection.buffer().data());
 
   // Compare if values are the same as for python script
@@ -138,9 +142,8 @@ void testSOAToTorch::test() {
 
   std::cout << "Output Matrix:" << std::endl;
   for (size_t i = 0; i < batch_size; i++) {
-    std::cout << resultView.x()[i] << " " << resultView.y()[i] << std::endl;
+    std::cout << resultView.x()[i] << std::endl;
 
-    CPPUNIT_ASSERT(std::abs(resultView.x()[i] - result_check[i][0]) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(resultView.y()[i] - result_check[i][1]) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(resultView.x()[i] - result_check[i]) <= 1.0e-05);
   }
 }

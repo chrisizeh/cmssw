@@ -1,117 +1,203 @@
+
 #include <torch/torch.h>
 #include <torch/script.h>
 
+struct MetadataElement {
+  torch::ScalarType type;
+  int bytes;
+  int columns;
 
-struct MaskElement {
-	torch::ScalarType type;
-	int bytes;
-	int columns;
-	bool used;
-
-	MaskElement(torch::ScalarType type_, int columns_, bool used_): type(type_),columns(columns_), used(used_){ 
-		bytes = torch::elementSize(type);
-	}
+  MetadataElement(torch::ScalarType type_, int columns_) : type(type_), columns(columns_) {
+    bytes = torch::elementSize(type);
+  }
 };
 
+struct InputMetadataElement : MetadataElement {
+  bool used;
 
-class Mask {
+  InputMetadataElement(torch::ScalarType type_, int columns_) : MetadataElement(type_, columns_), used(true) {}
+  InputMetadataElement(torch::ScalarType type_, int columns_, bool used_)
+      : MetadataElement(type_, columns_), used(used_) {}
+};
+
+struct OutputMetadata : MetadataElement {
+  OutputMetadata(torch::ScalarType type_, int columns_) : MetadataElement(type_, columns_) {}
+};
+
+struct InputMetadata {
+private:
+  std::vector<InputMetadataElement> blocks;
+
 public:
-	int nBlocks;
-	int nElements;
+  std::vector<int> order;
+  int nBlocks;
+  int nTensors;
 
-	Mask(int nElements_, std::vector<torch::ScalarType> types, std::vector<int> columns, std::vector<bool> used) {
-		nElements = nElements_;
-		nBlocks = std::min({types.size(), columns.size(), used.size()});
-		blocks.reserve(nBlocks);
+  InputMetadata(const std::vector<torch::ScalarType>& types, const std::vector<int>& columns) {
+    nBlocks = std::min({types.size(), columns.size()});
+    nTensors = 0;
 
-		for (int i = 0; i < nBlocks; i++) {
-			blocks.push_back(MaskElement(types[i], columns[i], used[i]));
-		}
-	}
+    blocks.reserve(nBlocks);
+    order.reserve(nBlocks);
 
-	MaskElement operator [](int i) const {return blocks[i];}
+    for (int i = 0; i < nBlocks; i++) {
+      nTensors++;
+      blocks.emplace_back(types[i], columns[i]);
+      order.push_back(i);
+    }
+  }
 
-private: 
-	std::vector<MaskElement> blocks;
+  // TODO: How to allow option for filter but not order
+
+  // InputMetadata(const std::vector<torch::ScalarType>& types,
+  // 	const std::vector<int>& columns,
+  // 	const std::vector<bool>& used) {
+  // 	nBlocks = std::min({types.size(), columns.size(), used.size()});
+  // 	nTensors = 0;
+
+  // 	blocks.reserve(nBlocks);
+  // 	order.reserve(nBlocks);
+
+  // 	for (int i = 0; i < nBlocks; i++) {
+  // 		nTensors += used;
+  // 		blocks.emplace_back(types[i], columns[i], used[i]);
+  // 		order.push_back(i);
+  // 	}
+  // }
+
+  InputMetadata(const std::vector<torch::ScalarType>& types,
+                const std::vector<int>& columns,
+                const std::vector<int>& order_)
+      : order(order_) {
+    nBlocks = std::min({types.size(), columns.size(), order_.size()});
+    nTensors = 0;
+    blocks.reserve(nBlocks);
+
+    for (int i = 0; i < nBlocks; i++) {
+      nTensors += order[i] != -1;
+      blocks.emplace_back(types[i], columns[i], order[i] != -1);
+    }
+  }
+
+  InputMetadata(const std::vector<torch::ScalarType>& types, const std::vector<int>& columns, std::vector<int>&& order_)
+      : order(std::move(order_)) {
+    nBlocks = std::min({types.size(), columns.size(), order.size()});
+    nTensors = 0;
+    blocks.reserve(nBlocks);
+
+    for (int i = 0; i < nBlocks; i++) {
+      nTensors += order[i] != -1;
+      blocks.emplace_back(types[i], columns[i], order[i] != -1);
+    }
+  }
+
+  InputMetadata(const torch::ScalarType types, const int columns) {
+    nBlocks = 1;
+    nTensors = 1;
+    blocks.reserve(1);
+    order.reserve(1);
+
+    blocks.emplace_back(types, columns);
+    order.push_back(0);
+  }
+
+  InputMetadataElement operator[](int i) const { return blocks[i]; }
 };
 
+class ModelMetadata {
+public:
+  int nElements;
+
+  InputMetadata input;
+  OutputMetadata output;
+
+  ModelMetadata(int nElements_, const InputMetadata& input_, const OutputMetadata& output_)
+      : nElements(nElements_), input(input_), output(output_) {}
+};
 
 template <typename SOA_Layout>
 class Converter {
 public:
-	static std::vector<torch::Tensor> convert_multiple(Mask mask, torch::Device device, std::byte* arr);
-	static torch::Tensor convert_single(int nElements, MaskElement element, torch::Device device, std::byte* arr);
+  static std::vector<torch::IValue> convert_input(const ModelMetadata& mask, torch::Device device, std::byte* arr);
+  static torch::Tensor convert_output(const ModelMetadata& element, torch::Device device, std::byte* arr);
 
 private:
-	static std::array<long int, 2> soa_get_stride(int nElements, int bytes);
-	static std::array<long int, 2> soa_get_size(int nElements, int bytes);
+  static std::array<long int, 2> soa_get_stride(int nElements, int bytes);
+  static std::array<long int, 2> soa_get_size(int nElements, int bytes);
 
-	template <size_t N>
-	static torch::Tensor array_to_tensor(torch::Device device, torch::ScalarType type, std::byte* arr, const long int* size, const long int* stride);
+  template <size_t N>
+  static torch::Tensor array_to_tensor(torch::Device device,
+                                       torch::ScalarType type,
+                                       std::byte* arr,
+                                       const std::array<long int, 2>& size,
+                                       const std::array<long int, 2>& stride);
 };
 
-
 template <typename SOA_Layout>
-	std::array<long int, 2> Converter<SOA_Layout>::soa_get_stride(int nElements, int bytes) {
-	int per_bunch = SOA_Layout::alignment/bytes;
-	int bunches = std::ceil(1.0 * nElements/per_bunch);
-	std::array<long int, 2> stride{{1, bunches * per_bunch}};
-	return stride;
+std::array<long int, 2> Converter<SOA_Layout>::soa_get_stride(int nElements, int bytes) {
+  int per_bunch = SOA_Layout::alignment / bytes;
+  int bunches = std::ceil(1.0 * nElements / per_bunch);
+  std::array<long int, 2> stride{{1, bunches * per_bunch}};
+  return stride;
 }
 
-
 template <typename SOA_Layout>
-	std::array<long int, 2> Converter<SOA_Layout>::soa_get_size(int nElements, int cols) {
-	std::array<long int, 2> size{{nElements, cols}};
-	return size;
+std::array<long int, 2> Converter<SOA_Layout>::soa_get_size(int nElements, int cols) {
+  std::array<long int, 2> size{{nElements, cols}};
+  return size;
 }
-
 
 template <typename SOA_Layout>
 template <size_t N>
-torch::Tensor Converter<SOA_Layout>::array_to_tensor(torch::Device device, torch::ScalarType type, std::byte* arr, const long int* size, const long int* stride) {
-	long int arr_size[N];
-	long int arr_stride[N];
-	std::copy(size, size+N, arr_size);
-	std::copy(stride, stride+N, arr_stride);
+torch::Tensor Converter<SOA_Layout>::array_to_tensor(torch::Device device,
+                                                     torch::ScalarType type,
+                                                     std::byte* arr,
+                                                     const std::array<long int, 2>& size,
+                                                     const std::array<long int, 2>& stride) {
+  long int arr_size[N];
+  long int arr_stride[N];
+  std::copy(size.begin(), size.end(), arr_size);
+  std::copy(stride.begin(), stride.end(), arr_stride);
 
-	auto options = torch::TensorOptions().dtype(type).device(device).pinned_memory(true);
-	return torch::from_blob(arr, arr_size, arr_stride, options);
+  auto options = torch::TensorOptions().dtype(type).device(device).pinned_memory(true);
+  return torch::from_blob(arr, arr_size, arr_stride, options);
 }
 
-
 template <typename SOA_Layout>
-std::vector<torch::Tensor> Converter<SOA_Layout>::convert_multiple(Mask mask, torch::Device device, std::byte* arr) {
-	std::vector<torch::Tensor> tensors;
-	int skip = 0;
-	std::array<long int, 2> stride;
-	std::array<long int, 2> size;
-	torch::Tensor tensor;
+std::vector<torch::IValue> Converter<SOA_Layout>::convert_input(const ModelMetadata& metadata,
+                                                                torch::Device device,
+                                                                std::byte* arr) {
+  std::vector<torch::IValue> tensors(metadata.input.nTensors);
+  int skip = 0;
+  std::array<long int, 2> stride;
+  std::array<long int, 2> size;
+  torch::Tensor tensor;
 
-	for (int i = 0; i < mask.nBlocks; i++) {
-		std::cout << "Block " << i << std::endl;
-		stride = Converter<SOA_Layout>::soa_get_stride(mask.nElements, mask[i].bytes);
-		std::cout << "Stride: {" << stride[0] << ", " << stride[1] << "}" << std::endl;
+  for (int i = 0; i < metadata.input.nBlocks; i++) {
+    std::cout << "Block " << i << std::endl;
+    stride = Converter<SOA_Layout>::soa_get_stride(metadata.nElements, metadata.input[i].bytes);
+    std::cout << "Stride: {" << stride[0] << ", " << stride[1] << "}" << std::endl;
 
-		if(mask[i].used) {
-		size = Converter<SOA_Layout>::soa_get_size(mask.nElements, mask[i].columns);
-		std::cout << "Size: {" << size[0] << ", " << size[1] << "}" << std::endl;
+    if (metadata.input[i].used) {
+      size = Converter<SOA_Layout>::soa_get_size(metadata.nElements, metadata.input[i].columns);
+      std::cout << "Size: {" << size[0] << ", " << size[1] << "}" << std::endl;
 
-		tensor = Converter<SOA_Layout>::array_to_tensor<2>(device, mask[i].type, arr+skip, size.data(), stride.data());
-		tensors.push_back(tensor);
-		}
-		skip += mask[i].columns * stride[1] * mask[i].bytes;
-	}
-	return tensors;
+      tensors.at(metadata.input.order[i]) = std::move(
+          Converter<SOA_Layout>::array_to_tensor<2>(device, metadata.input[i].type, arr + skip, size, stride));
+    }
+    skip += metadata.input[i].columns * stride[1] * metadata.input[i].bytes;
+  }
+  return tensors;
 }
 
-
 template <typename SOA_Layout>
-	torch::Tensor Converter<SOA_Layout>::convert_single(int nElements, MaskElement mask, torch::Device device, std::byte* arr) {
-	std::array<long int, 2> stride = Converter<SOA_Layout>::soa_get_stride(nElements, mask.bytes);
-	std::cout << "Stride: {" << stride[0] << ", " << stride[1] << "}" << std::endl;
-	std::array<long int, 2> size = Converter<SOA_Layout>::soa_get_size(nElements, mask.columns);
-	std::cout << "Size: {" << size[0] << ", " << size[1] << "}" << std::endl;
+torch::Tensor Converter<SOA_Layout>::convert_output(const ModelMetadata& metadata,
+                                                    torch::Device device,
+                                                    std::byte* arr) {
+  std::array<long int, 2> stride = Converter<SOA_Layout>::soa_get_stride(metadata.nElements, metadata.output.bytes);
+  std::cout << "Stride: {" << stride[0] << ", " << stride[1] << "}" << std::endl;
+  std::array<long int, 2> size = Converter<SOA_Layout>::soa_get_size(metadata.nElements, metadata.output.columns);
+  std::cout << "Size: {" << size[0] << ", " << size[1] << "}" << std::endl;
 
-	return Converter<SOA_Layout>::array_to_tensor<2>(device, mask.type, arr, size.data(), stride.data());
+  return Converter<SOA_Layout>::array_to_tensor<2>(device, metadata.output.type, arr, size, stride);
 }

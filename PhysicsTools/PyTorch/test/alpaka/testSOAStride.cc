@@ -26,25 +26,21 @@ using std::cout;
 using std::endl;
 
 // Simple SOA
-GENERATE_SOA_LAYOUT(SoAPositionTemplate,
-  SOA_COLUMN(int, x),
-  SOA_COLUMN(int, y),
-  SOA_COLUMN(int, z))
+GENERATE_SOA_LAYOUT(SoAPositionTemplate, SOA_COLUMN(int, x), SOA_COLUMN(int, y), SOA_COLUMN(int, z))
 
 using SoAPosition = SoAPositionTemplate<>;
 using SoAPositionView = SoAPosition::View;
 using SoAPositionConstView = SoAPosition::ConstView;
 
-
 // Large SOA
 GENERATE_SOA_LAYOUT(SOAPoseTemplate,
-  SOA_COLUMN(double, x),
-  SOA_COLUMN(double, y),
-  SOA_COLUMN(double, z),
-  SOA_COLUMN(double, phi),
-  SOA_COLUMN(double, psi),
-  SOA_COLUMN(double, theta),
-  SOA_COLUMN(double, t))
+                    SOA_COLUMN(double, x),
+                    SOA_COLUMN(double, y),
+                    SOA_COLUMN(double, z),
+                    SOA_COLUMN(double, phi),
+                    SOA_COLUMN(double, psi),
+                    SOA_COLUMN(double, theta),
+                    SOA_COLUMN(double, t))
 
 using SoAPose = SOAPoseTemplate<>;
 using SoAPoseView = SoAPose::View;
@@ -67,8 +63,8 @@ CPPUNIT_TEST_SUITE_REGISTRATION(testSOAStride);
 
 template <typename T>
 std::array<long int, 2> soa_get_stride(int nelements, long int alignment) {
-  int per_bunch = alignment/sizeof(T);
-  int bunches = std::ceil(1.0 * nelements/per_bunch);
+  int per_bunch = alignment / sizeof(T);
+  int bunches = std::ceil(1.0 * nelements / per_bunch);
   std::array<long int, 2> stride{{1, bunches * per_bunch}};
   return stride;
 }
@@ -76,10 +72,10 @@ std::array<long int, 2> soa_get_stride(int nelements, long int alignment) {
 template <typename T, typename SOA_Layout>
 std::array<long int, 2> soa_get_size(int rows) {
   // Method for column count will be added -> until then, calculated
-  int per_bunch = SOA_Layout::alignment/sizeof(T);
-  int bunches = std::ceil(1.0 * rows/per_bunch);
+  int per_bunch = SOA_Layout::alignment / sizeof(T);
+  int bunches = std::ceil(1.0 * rows / per_bunch);
   int byteSize = SOA_Layout::computeDataSize(rows);
-  int columns = byteSize/(bunches * SOA_Layout::alignment);  
+  int columns = byteSize / (bunches * SOA_Layout::alignment);
 
   std::array<long int, 2> size{{rows, columns}};
   return size;
@@ -90,13 +86,12 @@ template <typename T, std::size_t N>
 torch::Tensor array_to_tensor(torch::Device device, std::byte* arr, const long int* size, const long int* stride) {
   long int arr_size[N];
   long int arr_stride[N];
-  std::copy(size, size+N, arr_size);
-  std::copy(stride, stride+N, arr_stride);
+  std::copy(size, size + N, arr_size);
+  std::copy(stride, stride + N, arr_stride);
 
   auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
   return torch::from_blob(arr, arr_size, arr_stride, options);
 }
-
 
 void testSOAStride::test_position_SOA() {
   std::cout << "SOA with int, one bunch filled and 3 rows." << std::endl;
@@ -112,7 +107,7 @@ void testSOAStride::test_position_SOA() {
   for (size_t i = 0; i < batch_size; i++) {
     positionCollectionView.x()[i] = 12 + i;
     positionCollectionView.y()[i] = 3 * i;
-    positionCollectionView.z()[i] = 36 * i;  
+    positionCollectionView.z()[i] = 36 * i;
   }
 
   std::array<long int, 2> size = soa_get_size<int, SoAPosition>(positionCollectionView.metadata().size());
@@ -125,7 +120,8 @@ void testSOAStride::test_position_SOA() {
   CPPUNIT_ASSERT(stride[1] == 32);
 
   // Check correct tensor creation with stride
-  torch::Tensor tensor = array_to_tensor<int, 2>(device, positionCollection.buffer().data(), size.data(), stride.data());
+  torch::Tensor tensor =
+      array_to_tensor<int, 2>(device, positionCollection.buffer().data(), size.data(), stride.data());
 
   for (size_t i = 0; i < batch_size; i++) {
     CPPUNIT_ASSERT(positionCollectionView.x()[i] - tensor[i][0].item<int>() == 0);
@@ -148,7 +144,7 @@ void testSOAStride::test_multi_bunch() {
   for (size_t i = 0; i < batch_size; i++) {
     positionCollectionView.x()[i] = 12 + i;
     positionCollectionView.y()[i] = 2 * i;
-    positionCollectionView.z()[i] = 36 * i;  
+    positionCollectionView.z()[i] = 36 * i;
   }
 
   std::array<long int, 2> size = soa_get_size<int, SoAPosition>(positionCollectionView.metadata().size());
@@ -161,7 +157,8 @@ void testSOAStride::test_multi_bunch() {
   CPPUNIT_ASSERT(stride[1] == 64);
 
   // Check correct tensor creation with stride
-  torch::Tensor tensor = array_to_tensor<int, 2>(device, positionCollection.buffer().data(), size.data(), stride.data());
+  torch::Tensor tensor =
+      array_to_tensor<int, 2>(device, positionCollection.buffer().data(), size.data(), stride.data());
 
   for (size_t i = 0; i < batch_size; i++) {
     CPPUNIT_ASSERT(positionCollectionView.x()[i] - tensor[i][0].item<int>() == 0);
@@ -170,16 +167,15 @@ void testSOAStride::test_multi_bunch() {
   }
 }
 
-
 void testSOAStride::test_pose_SOA() {
   std::cout << "SOA with multiple bunches filled and 7 rows." << std::endl;
   torch::Device device(torch::kCPU);
 
   // Simple SOA with one bunch filled.
   const std::size_t batch_size = 35;
-  std::random_device rd; 
+  std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_real_distribution<double> distrib(0, 2*M_PI);
+  std::uniform_real_distribution<double> distrib(0, 2 * M_PI);
 
   // Create and fill needed portable collections
   PortableCollection<SoAPose, DevHost> poseCollection(batch_size, cms::alpakatools::host());
@@ -188,11 +184,11 @@ void testSOAStride::test_pose_SOA() {
   for (size_t i = 0; i < batch_size; i++) {
     poseCollectionView.x()[i] = 12 + i;
     poseCollectionView.y()[i] = 2.5 * i;
-    poseCollectionView.z()[i] = 36 * i;  
-    poseCollectionView.phi()[i] = distrib(gen);  
-    poseCollectionView.psi()[i] = distrib(gen);  
-    poseCollectionView.theta()[i] = distrib(gen);  
-    poseCollectionView.t()[i] = i;  
+    poseCollectionView.z()[i] = 36 * i;
+    poseCollectionView.phi()[i] = distrib(gen);
+    poseCollectionView.psi()[i] = distrib(gen);
+    poseCollectionView.theta()[i] = distrib(gen);
+    poseCollectionView.t()[i] = i;
   }
 
   std::array<long int, 2> size = soa_get_size<double, SoAPose>(poseCollectionView.metadata().size());
