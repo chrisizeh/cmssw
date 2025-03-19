@@ -2,7 +2,7 @@
 #include <torch/script.h>
 #include <math.h>
 #include <random>
-#include <any>
+#include <Eigen/Dense>
 
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -28,11 +28,13 @@ class testSOADataTypes : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testSOADataTypes);
   CPPUNIT_TEST(test_input_convert);
   CPPUNIT_TEST(test_output_convert);
+  CPPUNIT_TEST(test_eigen_scalar);
   CPPUNIT_TEST_SUITE_END();
 
 public:
   void test_input_convert();
   void test_output_convert();
+  void test_eigen_scalar();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(testSOADataTypes);
@@ -48,6 +50,20 @@ GENERATE_SOA_LAYOUT(SOAPoseTemplate,
 
 using SoAPose = SOAPoseTemplate<>;
 using SoAPoseView = SoAPose::View;
+
+GENERATE_SOA_LAYOUT(SoAEigenScalarTemplate,
+                    SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
+                    SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
+
+                    SOA_COLUMN(double, x),
+                    SOA_COLUMN(double, y),
+                    SOA_COLUMN(double, z),
+
+                    SOA_SCALAR(const char*, description),
+                    SOA_SCALAR(uint32_t, someNumber));
+
+using SoAEigenScalar = SoAEigenScalarTemplate<>;
+using SoAEigenScalarView = SoAEigenScalar::View;
 
 void testSOADataTypes::test_input_convert() {
   std::cout << "ALPAKA Platform info:" << std::endl;
@@ -166,7 +182,7 @@ void testSOADataTypes::test_output_convert() {
   alpaka::memcpy(queue, poseCollection.buffer(), poseHostCollection.buffer());
 
   // Run Converter for single tensor
-  InputMetadata input({{torch::kDouble, torch::kInt, torch::kFloat}}, {{3, 1, 3}}, {{true, false, true}});
+  InputMetadata input({{torch::kDouble, torch::kInt, torch::kFloat}}, {{3, 1, 3}}, {{0, -1, 1}});
   OutputMetadata output(torch::kDouble, 3);
   ModelMetadata metadata(batch_size, input, output);
 
@@ -178,4 +194,65 @@ void testSOADataTypes::test_output_convert() {
     CPPUNIT_ASSERT(std::abs(poseHostCollectionView.y()[i] - tensor[i][1].item<double>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(poseHostCollectionView.z()[i] - tensor[i][2].item<double>()) <= 1.0e-05);
   }
+};
+
+void testSOADataTypes::test_eigen_scalar() {
+  std::cout << "ALPAKA Platform info:" << std::endl;
+  int idx = 0;
+  try {
+    for (;;) {
+      alpaka::Platform<alpaka::DevCpu> platformHost;
+      alpaka::DevCpu host = alpaka::getDevByIdx(platformHost, idx);
+      std::cout << "Host[" << idx++ << "]:   " << alpaka::getName(host) << std::endl;
+    }
+  } catch (...) {
+  }
+  Platform platform;
+  std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
+  idx = 0;
+  for (const auto& d : alpakaDevices) {
+    std::cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << std::endl;
+  }
+  const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
+  CPPUNIT_ASSERT(alpakaDevices.size());
+  const auto& alpakaDevice = alpakaDevices[0];
+  Queue queue{alpakaDevice};
+
+  std::cout << "Will create torch device with type=" << torch_common::kDeviceType << std::endl;
+  torch::Device torchDevice(torch_common::kDeviceType);
+
+  // Simple SOA with one bunch filled.
+  const std::size_t batch_size = 4;
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<double> distrib(0, 2 * M_PI);
+
+  // Create and fill needed portable collections
+  PortableHostCollection<SoAEigenScalar> hostCollection(batch_size, alpakaHost);
+  SoAEigenScalarView& hostCollectionView = hostCollection.view();
+
+  hostCollectionView.description() = "heyho";
+  hostCollectionView.someNumber() = 5;
+
+  for (size_t i = 0; i < batch_size; i++) {
+    hostCollectionView[i].a()(0) = 1 + i;
+    hostCollectionView[i].a()(1) = 2 + i;
+    hostCollectionView[i].a()(2) = 3 + i;
+
+    hostCollectionView[i].b()(0) = 4 + i;
+    hostCollectionView[i].b()(1) = 5 + i;
+    hostCollectionView[i].b()(2) = 6 + i;
+  }
+
+  // Run Converter for single tensor
+  InputMetadata input(torch::kDouble, 3);
+  OutputMetadata output(torch::kDouble, Columns({2, 3}));
+  ModelMetadata metadata(batch_size, input, output);
+
+  torch::Tensor tensor =
+      Converter<SoAEigenScalar>::convert_output(metadata, torch::kCPU, hostCollection.buffer().data());
+  std::cout << tensor << std::endl;
+
+  std::cout << "description: " << hostCollectionView.description() << std::endl;
+  std::cout << "some number: " << hostCollectionView.someNumber() << std::endl;
 };

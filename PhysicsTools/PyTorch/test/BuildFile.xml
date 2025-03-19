@@ -119,7 +119,7 @@
 </iftool>
 
 <iftool name="cuda">
-<bin name="testSOAToTorch" file="testRunner.cc,testTensorStride.cu">
+<bin name="testTensorStride" file="testRunner.cc,testTensorStride.cu">
   <use name="boost_filesystem"/>
   <use name="catch2"/>
   <use name="cppunit"/>
@@ -169,6 +169,7 @@
   <use name="cppunit"/>
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
+  <use name="eigen"/>
   <flags ALPAKA_BACKENDS="1"/>
 </bin>
 
