@@ -12,7 +12,7 @@
 // ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED
 // ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 
-namespace torch_common {
+namespace torch_alpaka {
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
   constexpr c10::DeviceType kDeviceType = c10::DeviceType::CUDA;
 #elif ALPAKA_ACC_GPU_HIP_ENABLED
