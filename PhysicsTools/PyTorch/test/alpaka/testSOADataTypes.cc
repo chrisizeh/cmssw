@@ -37,17 +37,17 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(testSOADataTypes);
 
 GENERATE_SOA_LAYOUT(SoATemplate,
-    SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
-    SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
+                    SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
+                    SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
 
-    SOA_EIGEN_COLUMN(Eigen::Matrix2f, c),
+                    SOA_EIGEN_COLUMN(Eigen::Matrix2f, c),
 
-    SOA_COLUMN(double, x),
-    SOA_COLUMN(double, y),
-    SOA_COLUMN(double, z),
+                    SOA_COLUMN(double, x),
+                    SOA_COLUMN(double, y),
+                    SOA_COLUMN(double, z),
 
-    SOA_SCALAR(float, type),
-    SOA_SCALAR(int, someNumber));
+                    SOA_SCALAR(float, type),
+                    SOA_SCALAR(int, someNumber));
 
 using SoA = SoATemplate<>;
 using SoAView = SoA::View;
@@ -108,7 +108,6 @@ void testSOADataTypes::test() {
     hostCollectionView.x()[i] = 12 + i;
     hostCollectionView.y()[i] = 2.5 * i;
     hostCollectionView.z()[i] = 36 * i;
-    
   }
 
   alpaka::memcpy(queue, deviceCollection.buffer(), hostCollection.buffer());
@@ -132,10 +131,14 @@ void testSOADataTypes::test() {
     CPPUNIT_ASSERT(std::abs(hostCollectionView[i].b()(2) - tensor[0].toTensor()[i][1][2].item<double>()) <= 1.0e-05);
 
     // Block: Eigen Matrix Columns Float
-    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(0, 0) - tensor[1].toTensor()[i][0][0][0].item<float>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(0, 1) - tensor[1].toTensor()[i][0][0][1].item<float>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(1, 0) - tensor[1].toTensor()[i][0][1][0].item<float>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(1, 1) - tensor[1].toTensor()[i][0][1][1].item<float>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(0, 0) - tensor[1].toTensor()[i][0][0][0].item<float>()) <=
+                   1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(0, 1) - tensor[1].toTensor()[i][0][0][1].item<float>()) <=
+                   1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(1, 0) - tensor[1].toTensor()[i][0][1][0].item<float>()) <=
+                   1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(1, 1) - tensor[1].toTensor()[i][0][1][1].item<float>()) <=
+                   1.0e-05);
 
     // Block: Columns Double
     CPPUNIT_ASSERT(std::abs(hostCollectionView.x()[i] - tensor[2].toTensor()[i][0].item<double>()) <= 1.0e-05);
