@@ -4,9 +4,9 @@ The efficiently use PyTorch models on the GPU with SoA input, a producer is prov
 
 ## Metadata
 
-There a three types of Metadata, `InputMetadata`, `OutputMetadata` and `ModelMetadata`. The `ModelMetadata` consists of the `OutputMetadata` and `InputMetadata`, and the number of elements that are present. This number of elements are the number of rows in the SoA, which must be similar for Input and Output SoA.
+There are three types of Metadata, `InputMetadata`, `OutputMetadata` and `ModelMetadata`. The `ModelMetadata` consists of the `OutputMetadata` and `InputMetadata`, and the number of elements that are present. This number of elements are the number of rows in the SoA, which must be similar for Input and Output SoA.
 
-To create a single tensor, the columns have to be of the same type. If the SoA contains columns of different types, it can be partitioned into blocks, with each block getting converted to a tensor. This is done, by passing to the constructor of the InputMetadata vectors (see example). 
+To create a single tensor, the columns have to be of the same type. If the SoA contains columns of different types, it can be partitioned into blocks, with each block getting converted to a torch tensor. This is done, by passing to the constructor of the InputMetadata vectors (see example). 
 For constructing of the metadata, the following info is needed for each block:
 
 - Type: The torch type, which is associated to a C++ type. The following types are support by torch:
