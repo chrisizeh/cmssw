@@ -114,8 +114,8 @@ void testSOADataTypes::test() {
   alpaka::memcpy(queue, deviceCollection.buffer(), hostCollection.buffer());
 
   // Run Converter for single tensor
-  InputMetadata input({torch::kDouble, torch::kFloat, torch::kDouble, torch::kFloat, torch::kInt}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
-  OutputMetadata output(torch::kDouble, 3);
+  InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
+  OutputMetadata output(Double, 3);
   ModelMetadata metadata(batch_size, input, output);
 
   std::vector<torch::IValue> tensor =

@@ -9,7 +9,18 @@ There a three types of Metadata, `InputMetadata`, `OutputMetadata` and `ModelMet
 To create a single tensor, the columns have to be of the same type. If the SoA contains columns of different types, it can be partitioned into blocks, with each block getting converted to a tensor. This is done, by passing to the constructor of the InputMetadata vectors (see example). 
 For constructing of the metadata, the following info is needed for each block:
 
-- Type: The torch type, which is associated to a C++ type (torck::kFloat, torch::kDouble, ...)
+- Type: The torch type, which is associated to a C++ type. The following types are support by torch:
+    - `Byte = torch::kByte`
+    - `Char = torch::kChar`
+    - `Short = torch::kShort`
+    - `Int = torch::kInt`
+    - `Long = torch::kLong`
+    - `UInt16 = torch::kUInt16`
+    - `UInt32 = torch::kUInt32`
+    - `UInt64 = torch::kUInt64`
+    - `Half = torch::kHalf`
+    - `Float = torch::kFloat`
+    - `Double = torch::kDouble`
 - Columns: The number of columns associated to the block.
     - If the block is a scalar, columns have to be `0`, defining that it is not a column with `n` elements.
     - If the block is an eigen object, columns must be a vector of the number of columns and dimension of the object.\
@@ -48,7 +59,7 @@ GENERATE_SOA_LAYOUT(SoAOutputTemplate,
 
 Metadata Definition for converting to tensor:
 ```
-InputMetadata input({torch::kDouble, torch::kFloat, torch::kDouble, torch::kFloat, torch::kInt}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
-OutputMetadata output(torch::kInt, 1);
+InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
+OutputMetadata output(Int, 1);
 ModelMetadata metadata(batch_size, input, output);
 ```

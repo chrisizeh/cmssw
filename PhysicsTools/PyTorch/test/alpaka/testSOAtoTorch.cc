@@ -125,8 +125,8 @@ void testSOAToTorch::test() {
   }
 
   // Call function to build tensor and run model
-  InputMetadata inputMask(torch::kFloat, 3);
-  ModelMetadata mask(batch_size, inputMask, OutputMetadata(torch::kFloat, 2));
+  InputMetadata inputMask(Float, 3);
+  ModelMetadata mask(batch_size, inputMask, OutputMetadata(Float, 2));
 
   run<SoAPosition, SoAResult>(
       torchDevice, model, mask, positionCollection.buffer().data(), resultCollection.buffer().data());
