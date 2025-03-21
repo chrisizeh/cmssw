@@ -40,6 +40,8 @@ GENERATE_SOA_LAYOUT(SoATemplate,
     SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
     SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
 
+    SOA_EIGEN_COLUMN(Eigen::Matrix2f, c),
+
     SOA_COLUMN(double, x),
     SOA_COLUMN(double, y),
     SOA_COLUMN(double, z),
@@ -98,6 +100,11 @@ void testSOADataTypes::test() {
     hostCollectionView[i].b()(1) = 5 + i;
     hostCollectionView[i].b()(2) = 6 + i;
 
+    hostCollectionView[i].c()(0, 0) = 4 + i;
+    hostCollectionView[i].c()(0, 1) = 6 + i;
+    hostCollectionView[i].c()(1, 0) = 8 + i;
+    hostCollectionView[i].c()(1, 1) = 10 + i;
+
     hostCollectionView.x()[i] = 12 + i;
     hostCollectionView.y()[i] = 2.5 * i;
     hostCollectionView.z()[i] = 36 * i;
@@ -107,7 +114,7 @@ void testSOADataTypes::test() {
   alpaka::memcpy(queue, deviceCollection.buffer(), hostCollection.buffer());
 
   // Run Converter for single tensor
-  InputMetadata input({torch::kDouble, torch::kDouble, torch::kFloat, torch::kInt}, {{{2, 3}}, 3, 0, 0});
+  InputMetadata input({torch::kDouble, torch::kFloat, torch::kDouble, torch::kFloat, torch::kInt}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
   OutputMetadata output(torch::kDouble, 3);
   ModelMetadata metadata(batch_size, input, output);
 
@@ -115,7 +122,7 @@ void testSOADataTypes::test() {
       Converter<SoA>::convert_input(metadata, torchDevice, deviceCollection.buffer().data());
 
   for (size_t i = 0; i < batch_size; i++) {
-    // Block: Eigen Columns Double
+    // Block: Eigen Vector Columns Double
     CPPUNIT_ASSERT(std::abs(hostCollectionView[i].a()(0) - tensor[0].toTensor()[i][0][0].item<double>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(hostCollectionView[i].a()(1) - tensor[0].toTensor()[i][0][1].item<double>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(hostCollectionView[i].a()(2) - tensor[0].toTensor()[i][0][2].item<double>()) <= 1.0e-05);
@@ -124,15 +131,21 @@ void testSOADataTypes::test() {
     CPPUNIT_ASSERT(std::abs(hostCollectionView[i].b()(1) - tensor[0].toTensor()[i][1][1].item<double>()) <= 1.0e-05);
     CPPUNIT_ASSERT(std::abs(hostCollectionView[i].b()(2) - tensor[0].toTensor()[i][1][2].item<double>()) <= 1.0e-05);
 
+    // Block: Eigen Matrix Columns Float
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(0, 0) - tensor[1].toTensor()[i][0][0][0].item<float>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(0, 1) - tensor[1].toTensor()[i][0][0][1].item<float>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(1, 0) - tensor[1].toTensor()[i][0][1][0].item<float>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].c()(1, 1) - tensor[1].toTensor()[i][0][1][1].item<float>()) <= 1.0e-05);
+
     // Block: Columns Double
-    CPPUNIT_ASSERT(std::abs(hostCollectionView.x()[i] - tensor[1].toTensor()[i][0].item<double>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(hostCollectionView.y()[i] - tensor[1].toTensor()[i][1].item<double>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(hostCollectionView.z()[i] - tensor[1].toTensor()[i][2].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.x()[i] - tensor[2].toTensor()[i][0].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.y()[i] - tensor[2].toTensor()[i][1].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.z()[i] - tensor[2].toTensor()[i][2].item<double>()) <= 1.0e-05);
 
     // Block: Scalar Float
-    CPPUNIT_ASSERT(std::abs(hostCollectionView.type() - tensor[2].toTensor()[i].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.type() - tensor[3].toTensor()[i].item<double>()) <= 1.0e-05);
 
     // Block: Scalar Int
-    CPPUNIT_ASSERT(std::abs(hostCollectionView.someNumber() - tensor[3].toTensor()[i].item<int>()) == 0);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.someNumber() - tensor[4].toTensor()[i].item<int>()) == 0);
   }
 };

@@ -199,13 +199,14 @@ std::vector<long int> Converter<SOA_Layout>::soa_get_stride(bool isScalar, int n
     stride[0] = 0;
     bunches = 1;
   }
-  stride[N - 1] = bunches * per_bunch;
+  stride[std::min(2, N-1)] = bunches * per_bunch;
 
-  // stride calculation has to be inverted, as for eigen types column and depth are switched, compared to usual column major.
-  if (columns.size() > 1 && N > 2) {
-    for (int i = N - 2; i > 0; i--) {
-      stride[i] = stride[i + 1] * columns[i];
+  // eigen are stored in column major, but still for every column.
+  if (N > 2) {
+    for (int i = 3; i < N; i++) {
+      stride[i] = stride[i - 1] * columns[i-2];
     }
+    stride[1] = stride[N-1] * columns[N-2];
   }
 
   return stride;
