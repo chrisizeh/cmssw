@@ -11,7 +11,6 @@
 #include <c10/cuda/CUDAStream.h>
 #endif
 
-#include "PhysicsTools/PyTorch/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
@@ -20,9 +19,11 @@
 #include "DataFormats/Portable/interface/PortableCollection.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 
-#include "../Converter.h"
+#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
+#include "PhysicsTools/PyTorch/interface/Converter.h"
 
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
+using namespace torch_alpaka;
 
 class testSOADataTypes : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testSOADataTypes);
@@ -87,8 +88,8 @@ void testSOADataTypes::test_input_convert() {
   const auto& alpakaDevice = alpakaDevices[0];
   Queue queue{alpakaDevice};
 
-  std::cout << "Will create torch device with type=" << torch_common::kDeviceType << std::endl;
-  torch::Device torchDevice(torch_common::kDeviceType);
+  std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType << std::endl;
+  torch::Device torchDevice(torch_alpaka::kDeviceType);
 
   // Simple SOA with one bunch filled.
   const std::size_t batch_size = 35;
@@ -156,8 +157,8 @@ void testSOADataTypes::test_output_convert() {
   const auto& alpakaDevice = alpakaDevices[0];
   Queue queue{alpakaDevice};
 
-  std::cout << "Will create torch device with type=" << torch_common::kDeviceType << std::endl;
-  torch::Device torchDevice(torch_common::kDeviceType);
+  std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType << std::endl;
+  torch::Device torchDevice(torch_alpaka::kDeviceType);
 
   // Simple SOA with one bunch filled.
   const std::size_t batch_size = 35;
@@ -218,8 +219,8 @@ void testSOADataTypes::test_eigen_scalar() {
   const auto& alpakaDevice = alpakaDevices[0];
   Queue queue{alpakaDevice};
 
-  std::cout << "Will create torch device with type=" << torch_common::kDeviceType << std::endl;
-  torch::Device torchDevice(torch_common::kDeviceType);
+  std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType << std::endl;
+  torch::Device torchDevice(torch_alpaka::kDeviceType);
 
   // Simple SOA with one bunch filled.
   const std::size_t batch_size = 4;
@@ -246,7 +247,7 @@ void testSOADataTypes::test_eigen_scalar() {
 
   // Run Converter for single tensor
   InputMetadata input(torch::kDouble, 3);
-  OutputMetadata output(torch::kDouble, Columns({2, 3}));
+  OutputMetadata output(torch::kDouble, {{2, 3}});
   ModelMetadata metadata(batch_size, input, output);
 
   torch::Tensor tensor =

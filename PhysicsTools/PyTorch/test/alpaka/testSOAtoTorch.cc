@@ -14,7 +14,6 @@
 #include <cuda_runtime.h>
 #endif
 
-#include "PhysicsTools/PyTorch/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
@@ -23,9 +22,11 @@
 #include "DataFormats/Portable/interface/PortableCollection.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 
-#include "../Converter.h"
+#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
+#include "PhysicsTools/PyTorch/interface/Converter.h"
 
 using namespace ALPAKA_ACCELERATOR_NAMESPACE;
+using namespace torch_alpaka;
 
 // Input SOA
 GENERATE_SOA_LAYOUT(SoAPositionTemplate, SOA_COLUMN(float, x), SOA_COLUMN(float, y), SOA_COLUMN(float, z))
@@ -87,9 +88,9 @@ void testSOAToTorch::test() {
   const auto& alpakaDevice = alpakaDevices[0];
   Queue queue{alpakaDevice};
 
-  std::cout << "Will create torch device with type=" << torch_common::kDeviceType
+  std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType
             << " and native handle=" << alpakaDevice.getNativeHandle() << std::endl;
-  torch::Device torchDevice(torch_common::kDeviceType);
+  torch::Device torchDevice(torch_alpaka::kDeviceType);
 
   // Number of elements
   const std::size_t batch_size = 4;

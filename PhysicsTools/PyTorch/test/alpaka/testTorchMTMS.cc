@@ -23,7 +23,7 @@
 #include <nvtx3/nvToolsExt.h>
 #endif
 
-#include "PhysicsTools/PyTorch/interface/config.h"
+#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 
@@ -145,8 +145,8 @@ void testTorchFromBufferModelEvalSinglePass(torch::jit::script::Module& model,
   try {
     // Convert pinned memory on GPU to Torch tensor on GPU
     cout << "T" << thread << " I" << iteration << " Running torch inference" << endl;
-    torch_common::DeviceStreamGuard dsg(queue);
-    using torch_common::toTensor;
+    torch_alpaka::DeviceStreamGuard dsg(queue);
+    using torch_alpaka::toTensor;
     // Not fully understood but std::move() is needed
     // https://stackoverflow.com/questions/71790378/assign-memory-blob-to-py-torch-output-tensor-c-api
     toTensor(c_gpu) = model.forward({toTensor(a_gpu), toTensor(b_gpu)}).toTensor();
@@ -202,9 +202,9 @@ void testTorchFromBufferModelEval::test() {
   CPPUNIT_ASSERT(alpakaDevices.size());
   const auto& alpakaDevice = alpakaDevices[0];
 
-  cout << "Will create torch device with type=" << torch_common::kDeviceType
+  cout << "Will create torch device with type=" << torch_alpaka::kDeviceType
        << " and native handle=" << alpakaDevice.getNativeHandle() << endl;
-  torch::Device torchDevice(torch_common::kDeviceType, alpakaDevice.getNativeHandle());
+  torch::Device torchDevice(torch_alpaka::kDeviceType, alpakaDevice.getNativeHandle());
   torch::jit::script::Module model;
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().

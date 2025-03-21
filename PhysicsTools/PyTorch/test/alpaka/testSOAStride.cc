@@ -11,7 +11,7 @@
 #include <c10/cuda/CUDAStream.h>
 #endif
 
-#include "PhysicsTools/PyTorch/interface/config.h"
+#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
