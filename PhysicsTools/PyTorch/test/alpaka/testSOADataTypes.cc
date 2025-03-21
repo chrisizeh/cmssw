@@ -41,27 +41,27 @@ public:
 CPPUNIT_TEST_SUITE_REGISTRATION(testSOADataTypes);
 
 GENERATE_SOA_LAYOUT(SOAPoseTemplate,
-                    SOA_COLUMN(double, x),
-                    SOA_COLUMN(double, y),
-                    SOA_COLUMN(double, z),
-                    SOA_COLUMN(int, t),
-                    SOA_COLUMN(float, phi),
-                    SOA_COLUMN(float, psi),
-                    SOA_COLUMN(float, theta))
+    SOA_COLUMN(double, x),
+    SOA_COLUMN(double, y),
+    SOA_COLUMN(double, z),
+    SOA_COLUMN(int, t),
+    SOA_COLUMN(float, phi),
+    SOA_COLUMN(float, psi),
+    SOA_COLUMN(float, theta))
 
 using SoAPose = SOAPoseTemplate<>;
 using SoAPoseView = SoAPose::View;
 
 GENERATE_SOA_LAYOUT(SoAEigenScalarTemplate,
-                    SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
-                    SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
+    SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
+    SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
 
-                    SOA_COLUMN(double, x),
-                    SOA_COLUMN(double, y),
-                    SOA_COLUMN(double, z),
+    SOA_COLUMN(double, x),
+    SOA_COLUMN(double, y),
+    SOA_COLUMN(double, z),
 
-                    SOA_SCALAR(const char*, description),
-                    SOA_SCALAR(uint32_t, someNumber));
+    SOA_SCALAR(float, type),
+    SOA_SCALAR(int, someNumber));
 
 using SoAEigenScalar = SoAEigenScalarTemplate<>;
 using SoAEigenScalarView = SoAEigenScalar::View;
@@ -222,8 +222,8 @@ void testSOADataTypes::test_eigen_scalar() {
   std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType << std::endl;
   torch::Device torchDevice(torch_alpaka::kDeviceType);
 
-  // Simple SOA with one bunch filled.
-  const std::size_t batch_size = 4;
+  // Large batch size, so multiple bunches needed
+  const std::size_t batch_size = 35;
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_real_distribution<double> distrib(0, 2 * M_PI);
@@ -232,7 +232,7 @@ void testSOADataTypes::test_eigen_scalar() {
   PortableHostCollection<SoAEigenScalar> hostCollection(batch_size, alpakaHost);
   SoAEigenScalarView& hostCollectionView = hostCollection.view();
 
-  hostCollectionView.description() = "heyho";
+  hostCollectionView.type() = 4;
   hostCollectionView.someNumber() = 5;
 
   for (size_t i = 0; i < batch_size; i++) {
@@ -243,17 +243,22 @@ void testSOADataTypes::test_eigen_scalar() {
     hostCollectionView[i].b()(0) = 4 + i;
     hostCollectionView[i].b()(1) = 5 + i;
     hostCollectionView[i].b()(2) = 6 + i;
+
+    hostCollectionView.x()[i] = 12 + i;
+    hostCollectionView.y()[i] = 2.5 * i;
+    hostCollectionView.z()[i] = 36 * i;
+    
   }
 
   // Run Converter for single tensor
-  InputMetadata input(torch::kDouble, 3);
-  OutputMetadata output(torch::kDouble, {{2, 3}});
+  InputMetadata input({torch::kDouble, torch::kDouble, torch::kFloat, torch::kInt}, {{{2, 3}}, 3, 0, 0});
+  OutputMetadata output(torch::kDouble, 3);
   ModelMetadata metadata(batch_size, input, output);
 
-  torch::Tensor tensor =
-      Converter<SoAEigenScalar>::convert_output(metadata, torch::kCPU, hostCollection.buffer().data());
-  std::cout << tensor << std::endl;
-
-  std::cout << "description: " << hostCollectionView.description() << std::endl;
-  std::cout << "some number: " << hostCollectionView.someNumber() << std::endl;
+  std::vector<torch::IValue> tensor =
+      Converter<SoAEigenScalar>::convert_input(metadata, torch::kCPU, hostCollection.buffer().data());
+  std::cout << "Eigen Vector, Double: " << tensor[0] << std::endl;
+  std::cout << "Double: " << tensor[1] << std::endl;
+  std::cout << "Scalar, Float: " << tensor[2] << std::endl;
+  std::cout << "Scalar, Int: " << tensor[3] << std::endl;
 };

@@ -25,13 +25,23 @@ struct MetadataElement {
   torch::ScalarType type;
   Columns columns;
   int bytes;
+  bool isScalar;
 
   MetadataElement(torch::ScalarType type_, const Columns& columns_) : type(type_), columns(columns_) {
     bytes = torch::elementSize(type);
+    
+    // Use columns=0 to define scalar, but change to 1 to calculate correct size
+    isScalar = (columns[0] == 0);
+    if (isScalar)
+      columns.columns[0] = 1;
   }
 
   MetadataElement(torch::ScalarType type_, Columns&& columns_) : type(type_), columns(std::move(columns_)) {
     bytes = torch::elementSize(type);
+
+    isScalar = (columns[0] == 0);
+    if (isScalar)
+      columns.columns[0] = 1;
   }
 };
 
@@ -163,7 +173,7 @@ public:
   static torch::Tensor convert_output(const ModelMetadata& element, torch::Device device, std::byte* arr);
 
 private:
-  static std::vector<long int> soa_get_stride(int nElements, int bytes, const Columns& columns);
+  static std::vector<long int> soa_get_stride(bool isScalar, int nElements, int bytes, const Columns& columns);
   static std::vector<long int> soa_get_size(int nElements, const Columns& columns);
 
   // Wrap raw pointer by torch::Tensor based on type, size and stride.
@@ -176,13 +186,19 @@ private:
 
 // SOA_Layout is needed to calculate minimal size of columns, by using alignment info
 template <typename SOA_Layout>
-std::vector<long int> Converter<SOA_Layout>::soa_get_stride(int nElements, int bytes, const Columns& columns) {
+std::vector<long int> Converter<SOA_Layout>::soa_get_stride(bool isScalar, int nElements, int bytes, const Columns& columns) {
   int N = columns.size() + 1;
   std::vector<long int> stride(N);
   int per_bunch = SOA_Layout::alignment / bytes;
   int bunches = std::ceil(1.0 * nElements / per_bunch);
 
-  stride[0] = 1;
+  if(!isScalar)
+    stride[0] = 1;
+  else {
+    // Jump no element per row, to fill with scalar value
+    stride[0] = 0;
+    bunches = 1;
+  }
   stride[N - 1] = bunches * per_bunch;
 
   // stride calculation has to be inverted, as for eigen types column and depth are switched, compared to usual column major.
@@ -199,7 +215,8 @@ template <typename SOA_Layout>
 std::vector<long int> Converter<SOA_Layout>::soa_get_size(int nElements, const Columns& columns) {
   std::vector<long int> size(columns.size() + 1);
   size[0] = nElements;
-  std::copy(columns.data.begin(), columns.data.end(), size.begin() + 1);
+  std::copy(columns.columns.begin(), columns.columns.end(), size.begin() + 1);\
+  
   return size;
 }
 
@@ -234,7 +251,7 @@ std::vector<torch::IValue> Converter<SOA_Layout>::convert_input(const ModelMetad
     // Is used for skip calculation, is therefore calculated also for masked block
     stride.resize(N);
     stride =
-        Converter<SOA_Layout>::soa_get_stride(metadata.nElements, metadata.input[i].bytes, metadata.input[i].columns);
+        Converter<SOA_Layout>::soa_get_stride(metadata.input[i].isScalar, metadata.nElements, metadata.input[i].bytes, metadata.input[i].columns);
 
     // Only calculate size and build tensor, if not masked
     if (metadata.input[i].used) {
@@ -246,7 +263,7 @@ std::vector<torch::IValue> Converter<SOA_Layout>::convert_input(const ModelMetad
     }
 
     // Add block size in bytes to skip over it in next round
-    skip += metadata.input[i].columns[0] * stride[N - 1] * metadata.input[i].bytes;
+    skip += metadata.input[i].columns[0] * stride[1] * metadata.input[i].bytes;
   }
   return tensors;
 }
@@ -256,7 +273,7 @@ torch::Tensor Converter<SOA_Layout>::convert_output(const ModelMetadata& metadat
                                                     torch::Device device,
                                                     std::byte* arr) {
   std::vector<long int> stride =
-      Converter<SOA_Layout>::soa_get_stride(metadata.nElements, metadata.output.bytes, metadata.output.columns);
+      Converter<SOA_Layout>::soa_get_stride(metadata.output.isScalar, metadata.nElements, metadata.output.bytes, metadata.output.columns);
   std::vector<long int> size = Converter<SOA_Layout>::soa_get_size(metadata.nElements, metadata.output.columns);
 
   return Converter<SOA_Layout>::array_to_tensor(device, metadata.output.type, arr, size, stride);
