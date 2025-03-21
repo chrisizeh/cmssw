@@ -27,32 +27,16 @@ using namespace torch_alpaka;
 
 class testSOADataTypes : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testSOADataTypes);
-  CPPUNIT_TEST(test_input_convert);
-  CPPUNIT_TEST(test_output_convert);
-  CPPUNIT_TEST(test_eigen_scalar);
+  CPPUNIT_TEST(test);
   CPPUNIT_TEST_SUITE_END();
 
 public:
-  void test_input_convert();
-  void test_output_convert();
-  void test_eigen_scalar();
+  void test();
 };
 
 CPPUNIT_TEST_SUITE_REGISTRATION(testSOADataTypes);
 
-GENERATE_SOA_LAYOUT(SOAPoseTemplate,
-    SOA_COLUMN(double, x),
-    SOA_COLUMN(double, y),
-    SOA_COLUMN(double, z),
-    SOA_COLUMN(int, t),
-    SOA_COLUMN(float, phi),
-    SOA_COLUMN(float, psi),
-    SOA_COLUMN(float, theta))
-
-using SoAPose = SOAPoseTemplate<>;
-using SoAPoseView = SoAPose::View;
-
-GENERATE_SOA_LAYOUT(SoAEigenScalarTemplate,
+GENERATE_SOA_LAYOUT(SoATemplate,
     SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
     SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
 
@@ -63,141 +47,10 @@ GENERATE_SOA_LAYOUT(SoAEigenScalarTemplate,
     SOA_SCALAR(float, type),
     SOA_SCALAR(int, someNumber));
 
-using SoAEigenScalar = SoAEigenScalarTemplate<>;
-using SoAEigenScalarView = SoAEigenScalar::View;
+using SoA = SoATemplate<>;
+using SoAView = SoA::View;
 
-void testSOADataTypes::test_input_convert() {
-  std::cout << "ALPAKA Platform info:" << std::endl;
-  int idx = 0;
-  try {
-    for (;;) {
-      alpaka::Platform<alpaka::DevCpu> platformHost;
-      alpaka::DevCpu host = alpaka::getDevByIdx(platformHost, idx);
-      std::cout << "Host[" << idx++ << "]:   " << alpaka::getName(host) << std::endl;
-    }
-  } catch (...) {
-  }
-  Platform platform;
-  std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-  idx = 0;
-  for (const auto& d : alpakaDevices) {
-    std::cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << std::endl;
-  }
-  const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
-  CPPUNIT_ASSERT(alpakaDevices.size());
-  const auto& alpakaDevice = alpakaDevices[0];
-  Queue queue{alpakaDevice};
-
-  std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType << std::endl;
-  torch::Device torchDevice(torch_alpaka::kDeviceType);
-
-  // Simple SOA with one bunch filled.
-  const std::size_t batch_size = 35;
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<double> distrib(0, 2 * M_PI);
-
-  // Create and fill needed portable collections
-  PortableHostCollection<SoAPose> poseHostCollection(batch_size, cms::alpakatools::host());
-  PortableCollection<SoAPose, Device> poseCollection(batch_size, alpakaDevice);
-  SoAPoseView& poseHostCollectionView = poseHostCollection.view();
-
-  for (size_t i = 0; i < batch_size; i++) {
-    poseHostCollectionView.x()[i] = 12 + i;
-    poseHostCollectionView.y()[i] = 2.5 * i;
-    poseHostCollectionView.z()[i] = 36 * i;
-    poseHostCollectionView.phi()[i] = distrib(gen);
-    poseHostCollectionView.psi()[i] = distrib(gen);
-    poseHostCollectionView.theta()[i] = distrib(gen);
-    poseHostCollectionView.t()[i] = i;
-  }
-  alpaka::memcpy(queue, poseCollection.buffer(), poseHostCollection.buffer());
-
-  // Run Converter for multiple tensors
-  InputMetadata input({{torch::kDouble, torch::kInt, torch::kFloat}}, {{3, 1, 3}}, {{0, -1, 1}});
-  ModelMetadata metadata(batch_size, input, {torch::kInt, 1});
-  std::vector<torch::IValue> result =
-      Converter<SoAPose>::convert_input(metadata, torchDevice, poseCollection.buffer().data());
-  std::cout << "Length of result vector: " << result.size() << std::endl;
-  CPPUNIT_ASSERT(result.size() == 2);
-
-  for (size_t i = 0; i < result.size(); i++) {
-    std::cout << result[i] << std::endl;
-  }
-
-  for (size_t i = 0; i < batch_size; i++) {
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.x()[i] - result[0].toTensor()[i][0].item<double>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.y()[i] - result[0].toTensor()[i][1].item<double>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.z()[i] - result[0].toTensor()[i][2].item<double>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.phi()[i] - result[1].toTensor()[i][0].item<float>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.psi()[i] - result[1].toTensor()[i][1].item<float>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.theta()[i] - result[1].toTensor()[i][2].item<float>()) <= 1.0e-05);
-  }
-};
-
-void testSOADataTypes::test_output_convert() {
-  std::cout << "ALPAKA Platform info:" << std::endl;
-  int idx = 0;
-  try {
-    for (;;) {
-      alpaka::Platform<alpaka::DevCpu> platformHost;
-      alpaka::DevCpu host = alpaka::getDevByIdx(platformHost, idx);
-      std::cout << "Host[" << idx++ << "]:   " << alpaka::getName(host) << std::endl;
-    }
-  } catch (...) {
-  }
-  Platform platform;
-  std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-  idx = 0;
-  for (const auto& d : alpakaDevices) {
-    std::cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << std::endl;
-  }
-  const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
-  CPPUNIT_ASSERT(alpakaDevices.size());
-  const auto& alpakaDevice = alpakaDevices[0];
-  Queue queue{alpakaDevice};
-
-  std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType << std::endl;
-  torch::Device torchDevice(torch_alpaka::kDeviceType);
-
-  // Simple SOA with one bunch filled.
-  const std::size_t batch_size = 35;
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_real_distribution<double> distrib(0, 2 * M_PI);
-
-  // Create and fill needed portable collections
-  PortableHostCollection<SoAPose> poseHostCollection(batch_size, alpakaHost);
-  PortableCollection<SoAPose, Device> poseCollection(batch_size, alpakaDevice);
-  SoAPoseView& poseHostCollectionView = poseHostCollection.view();
-
-  for (size_t i = 0; i < batch_size; i++) {
-    poseHostCollectionView.x()[i] = 12 + i;
-    poseHostCollectionView.y()[i] = 2.5 * i;
-    poseHostCollectionView.z()[i] = 36 * i;
-    poseHostCollectionView.phi()[i] = distrib(gen);
-    poseHostCollectionView.psi()[i] = distrib(gen);
-    poseHostCollectionView.theta()[i] = distrib(gen);
-    poseHostCollectionView.t()[i] = i;
-  }
-  alpaka::memcpy(queue, poseCollection.buffer(), poseHostCollection.buffer());
-
-  // Run Converter for single tensor
-  InputMetadata input({{torch::kDouble, torch::kInt, torch::kFloat}}, {{3, 1, 3}}, {{0, -1, 1}});
-  OutputMetadata output(torch::kDouble, 3);
-  ModelMetadata metadata(batch_size, input, output);
-
-  torch::Tensor tensor = Converter<SoAPose>::convert_output(metadata, torchDevice, poseCollection.buffer().data());
-  std::cout << tensor << std::endl;
-
-  for (size_t i = 0; i < batch_size; i++) {
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.x()[i] - tensor[i][0].item<double>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.y()[i] - tensor[i][1].item<double>()) <= 1.0e-05);
-    CPPUNIT_ASSERT(std::abs(poseHostCollectionView.z()[i] - tensor[i][2].item<double>()) <= 1.0e-05);
-  }
-};
-
-void testSOADataTypes::test_eigen_scalar() {
+void testSOADataTypes::test() {
   std::cout << "ALPAKA Platform info:" << std::endl;
   int idx = 0;
   try {
@@ -229,8 +82,9 @@ void testSOADataTypes::test_eigen_scalar() {
   std::uniform_real_distribution<double> distrib(0, 2 * M_PI);
 
   // Create and fill needed portable collections
-  PortableHostCollection<SoAEigenScalar> hostCollection(batch_size, alpakaHost);
-  SoAEigenScalarView& hostCollectionView = hostCollection.view();
+  PortableHostCollection<SoA> hostCollection(batch_size, alpakaHost);
+  PortableCollection<SoA, Device> deviceCollection(batch_size, alpakaDevice);
+  SoAView& hostCollectionView = hostCollection.view();
 
   hostCollectionView.type() = 4;
   hostCollectionView.someNumber() = 5;
@@ -250,15 +104,35 @@ void testSOADataTypes::test_eigen_scalar() {
     
   }
 
+  alpaka::memcpy(queue, deviceCollection.buffer(), hostCollection.buffer());
+
   // Run Converter for single tensor
   InputMetadata input({torch::kDouble, torch::kDouble, torch::kFloat, torch::kInt}, {{{2, 3}}, 3, 0, 0});
   OutputMetadata output(torch::kDouble, 3);
   ModelMetadata metadata(batch_size, input, output);
 
   std::vector<torch::IValue> tensor =
-      Converter<SoAEigenScalar>::convert_input(metadata, torch::kCPU, hostCollection.buffer().data());
-  std::cout << "Eigen Vector, Double: " << tensor[0] << std::endl;
-  std::cout << "Double: " << tensor[1] << std::endl;
-  std::cout << "Scalar, Float: " << tensor[2] << std::endl;
-  std::cout << "Scalar, Int: " << tensor[3] << std::endl;
+      Converter<SoA>::convert_input(metadata, torchDevice, deviceCollection.buffer().data());
+
+  for (size_t i = 0; i < batch_size; i++) {
+    // Block: Eigen Columns Double
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].a()(0) - tensor[0].toTensor()[i][0][0].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].a()(1) - tensor[0].toTensor()[i][0][1].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].a()(2) - tensor[0].toTensor()[i][0][2].item<double>()) <= 1.0e-05);
+
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].b()(0) - tensor[0].toTensor()[i][1][0].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].b()(1) - tensor[0].toTensor()[i][1][1].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView[i].b()(2) - tensor[0].toTensor()[i][1][2].item<double>()) <= 1.0e-05);
+
+    // Block: Columns Double
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.x()[i] - tensor[1].toTensor()[i][0].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.y()[i] - tensor[1].toTensor()[i][1].item<double>()) <= 1.0e-05);
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.z()[i] - tensor[1].toTensor()[i][2].item<double>()) <= 1.0e-05);
+
+    // Block: Scalar Float
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.type() - tensor[2].toTensor()[i].item<double>()) <= 1.0e-05);
+
+    // Block: Scalar Int
+    CPPUNIT_ASSERT(std::abs(hostCollectionView.someNumber() - tensor[3].toTensor()[i].item<int>()) == 0);
+  }
 };
