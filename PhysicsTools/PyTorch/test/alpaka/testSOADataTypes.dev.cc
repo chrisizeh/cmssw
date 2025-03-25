@@ -121,8 +121,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
                                   torch::PackedTensorAccessor64<double, 3> tensor_vector,
                                   torch::PackedTensorAccessor64<float, 4> tensor_matrix,
                                   torch::PackedTensorAccessor64<double, 2> tensor_column,
-                                  torch::PackedTensorAccessor64<float, 2> tensor_scalar1,
-                                  torch::PackedTensorAccessor64<int, 2> tensor_scalar2) const {
+                                  torch::PackedTensorAccessor64<float, 2> tensor_scalar) const {
       for (uint32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
         ALPAKA_ASSERT_ACC(view[i].a()(0) - tensor_vector[i][0][0] < 1.0e-05);
         ALPAKA_ASSERT_ACC(view[i].a()(1) - tensor_vector[i][0][1] < 1.0e-05);
@@ -156,9 +155,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
         ALPAKA_ASSERT_ACC(view.z()[i] - tensor_column[i][2] < 1.0e-05);
         ALPAKA_ASSERT_ACC(view.z()[i] - tensor_column[i][2] > -1.0e-05);
 
-        ALPAKA_ASSERT_ACC(view.type() - tensor_scalar1[i][0] < 1.0e-05);
-        ALPAKA_ASSERT_ACC(view.type() - tensor_scalar1[i][0] > -1.0e-05);
-        ALPAKA_ASSERT_ACC(view.someNumber() - tensor_scalar2[i][0] == 0);
+        ALPAKA_ASSERT_ACC(view.type() - tensor_scalar[i][0] < 1.0e-05);
+        ALPAKA_ASSERT_ACC(view.type() - tensor_scalar[i][0] > -1.0e-05);
       }
     }
   };
@@ -179,11 +177,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
                         workDiv,
                         TestVerifyKernel{},
                         collection.view(),
-                        tensors[0].toTensor().packed_accessor64<double, 3>(),
-                        tensors[1].toTensor().packed_accessor64<float, 4>(),
-                        tensors[2].toTensor().packed_accessor64<double, 2>(),
-                        tensors[3].toTensor().packed_accessor64<float, 2>(),
-                        tensors[4].toTensor().packed_accessor64<int, 2>());
+                        tensors[3].toTensor().packed_accessor64<double, 3>(),
+                        tensors[2].toTensor().packed_accessor64<float, 4>(),
+                        tensors[0].toTensor().packed_accessor64<double, 2>(),
+                        tensors[1].toTensor().packed_accessor64<float, 2>());
   }
 
   void testSOADataTypes::test() {
@@ -193,7 +190,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
     CPPUNIT_ASSERT(alpakaDevices.size());
     const auto& alpakaDevice = alpakaDevices[0];
     Queue queue{alpakaDevice};
-
     torch::Device torchDevice(kDeviceType);
 
     // Large batch size, so multiple bunches needed
@@ -204,7 +200,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
     fill(queue, deviceCollection);
 
     // Run Converter for single tensor
-    InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
+    InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
     OutputMetadata output(Double, 3);
     ModelMetadata metadata(batch_size, input, output);
 

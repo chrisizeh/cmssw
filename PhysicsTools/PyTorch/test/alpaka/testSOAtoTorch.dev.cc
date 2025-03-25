@@ -110,35 +110,16 @@ void check(Queue& queue, PortableCollection<SoAResult, Device>& collection) {
 }
 
 void testSOAToTorch::test() {
-  std::cout << "ALPAKA Platform info:" << std::endl;
-  int idx = 0;
-  try {
-    for (;;) {
-      alpaka::Platform<alpaka::DevCpu> platformHost;
-      alpaka::DevCpu host = alpaka::getDevByIdx(platformHost, idx);
-      std::cout << "Host[" << idx++ << "]:   " << alpaka::getName(host) << std::endl;
-    }
-  } catch (...) {
-  }
   Platform platform;
   std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-  for (const auto& d : alpakaDevices) {
-    std::cout << "Device[" << idx++ << "]:   " << alpaka::getName(d) << std::endl;
-  }
   const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
   CPPUNIT_ASSERT(alpakaDevices.size());
   const auto& alpakaDevice = alpakaDevices[0];
   Queue queue{alpakaDevice};
-
-  std::cout << "Will create torch device with type=" << torch_alpaka::kDeviceType
-            << " and native handle=" << alpakaDevice.getNativeHandle() << std::endl;
-  torch::Device torchDevice(torch_alpaka::kDeviceType);
+  torch::Device torchDevice(kDeviceType);
 
   // Number of elements
   const std::size_t batch_size = 4;
-
-  std::vector<float> input{{1, 2, 3, 2, 2, 4, 4, 3, 1, 3, 1, 2}};
-  float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
 
   // Create and fill needed portable collections
   PortableCollection<SoAPosition, Device> positionCollection(batch_size, alpakaDevice);
