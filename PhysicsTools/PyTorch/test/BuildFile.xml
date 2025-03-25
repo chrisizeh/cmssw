@@ -145,32 +145,22 @@
   <flags ALPAKA_BACKENDS="1"/>
 </bin>
 
-<bin file="alpaka/testSOAStride.cc testRunner.cc" name="testSOAStride-alpaka">
-  <use name="boost_filesystem"/>
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <flags ALPAKA_BACKENDS="1"/>
-</bin>
-
-<bin file="alpaka/testSOAMultiInput.cc testRunner.cc" name="testSOAMultiInput-alpaka">
-  <use name="boost_filesystem"/>
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <flags ALPAKA_BACKENDS="1"/>
-</bin>
-
-<bin file="alpaka/testSOADataTypes.cc testRunner.cc" name="testSOADatatypes-alpaka">
+<bin file="alpaka/testSOADataTypes.dev.cc testRunner.cc" name="testSOADatatypes-alpaka">
   <use name="boost_filesystem"/>
   <use name="alpaka"/>
   <use name="cppunit"/>
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="eigen"/>
-  <flags ALPAKA_BACKENDS="1"/>
+  <use name="DataFormats/Portable"/>
+  <use name="DataFormats/PortableTestObjects"/>
+  <use name="FWCore/Framework"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/Utilities"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
+  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial"/>
 </bin>
 
 
