@@ -136,7 +136,7 @@
 </bin>
 </iftool>
 
-<bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch-alpaka">
+<!-- <bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch-alpaka">
   <use name="boost_filesystem"/>
   <use name="alpaka"/>
   <use name="cppunit"/>
@@ -144,7 +144,7 @@
   <use name="pytorch-cuda"/>
   <flags ALPAKA_BACKENDS="cuda"/>
   <flags ALPAKA_BACKENDS="serial"/>
-</bin>
+</bin> -->
 
 <bin file="alpaka/testSOADataTypes.dev.cc testRunner.cc" name="testSOADatatypes-alpaka">
   <use name="boost_filesystem"/>

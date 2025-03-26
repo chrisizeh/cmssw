@@ -30,52 +30,31 @@ namespace torch_alpaka {
   };
 
   // Generic metadata element, which stores necessary information of SOA block.
-  template <typename T>
   struct Block {
-    T* ptr;
+    void* ptr;
     Columns columns;
+    
+    torch::ScalarType type;
+    size_t bytes;
     bool isScalar;
 
     Block() : ptr(nullptr), columns(0) {}
-    Block(Block& block) : ptr(block.ptr), columns(block.columns), isScalar(block.isScalar) {}
+    // Block(Block& block) : ptr(block.ptr), columns(block.columns), isScalar(block.isScalar) {}
 
-    Block(T* ptr_, const Columns& columns_) : ptr(ptr_), columns(columns_) {
+    Block(void* ptr_, const Columns& columns_, torch::ScalarType type_, size_t bytes_) : ptr(ptr_), columns(columns_), type(type_), bytes(bytes_) {
       // Use columns=0 to define scalar, but change to 1 to calculate correct size
       isScalar = (columns[0] == 0);
       if (isScalar)
         columns.columns[0] = 1;
     }
-
-    Block(T* ptr_, Columns&& columns_) : ptr(ptr_), columns(std::move(columns_)) {
-      isScalar = (columns[0] == 0);
-      if (isScalar)
-        columns.columns[0] = 1;
-    }
   };
 
-  // Element for support of multiblock SOA, used to create array of blocks for input metadata struct.
-  // struct InputBlock : Block {
-  //   bool used;
-
-  //   // Constructor for scalar columns
-  //   InputBlock(void* ptr_, int columns_)
-  //       : Block(ptr_, Columns(columns_)), used(true) {}
-  //   InputBlock(void* ptr_, int columns_, bool used_)
-  //       : MetadataElement(ptr_, Columns(columns_)), used(used_) {}
-
-  //   // Constructor for scalar or eigen columns
-  //   InputBlock(void* ptr_, const Columns& columns_)
-  //       : MetadataElement(ptr_, columns_), used(true) {}
-  //   InputBlock(void* ptr_, const Columns& columns_, bool used_)
-  //       : MetadataElement(ptr_, columns_), used(used_) {}
-  // };
-
-  // Wrapper of generic element for output SOA, with only one block per SOA
-  template <typename>
-  struct OutputMetadata : Block<T> {
-    OutputMetadata(void* ptr_, int columns_) : Block<T>(ptr_, Columns(columns_)) {}
-    OutputMetadata(void* ptr_, const Columns& columns_) : Block<T>(ptr_, columns_) {}
-  };
+  template <typename T>
+  static Block createBlock(const Columns& columns, T* ptr) {
+    torch::ScalarType type = torch::CppTypeToScalarType<typename std::remove_reference<decltype(*ptr)>::type>();  
+    size_t bytes = sizeof(T);
+    return Block(ptr, columns, type, bytes);
+  }
 
   // Metadata for input SOA split into multiple blocks.
   // An order for the resulting tensors can be defined.
@@ -90,12 +69,11 @@ namespace torch_alpaka {
     int nBlocks;
 
     // Constructor, if all blocks should be converted in initial ordering.
-    InputMetadata(const std::map<std::string, Block> blocks_&) : blocks(blocks_) {
+    InputMetadata(const std::map<std::string, Block>& blocks_) : blocks(blocks_) {
       nBlocks = blocks.size();
 
-      for (int i = 0; i < nBlocks; i++) {
-        order.push_back(i);
-      }
+      for (const auto& [key, value] : blocks)
+        order.push_back(key);
     }
 
     // Constructor, if a special ordering should be created.
@@ -107,12 +85,17 @@ namespace torch_alpaka {
                   std::vector<std::string>&& order_)
         : blocks(blocks_), order(std::move(order_)) {}
 
-    InputMetadata(const void* ptr, const Columns& columns) {
-      blocks["default"] = Block(ptr, columns);
+    InputMetadata(Block&& block) {
+      blocks["default"] = std::move(block);
       order.push_back("default");
     }
 
-    Block& operator[](std::string key) const { return blocks[key]; }
+    Block operator[](std::string key) const { 
+      if (auto search = blocks.find(key); search != blocks.end()) {
+        return search->second;
+      }
+      throw std::invalid_argument( "Not a key for SoA blocks" );
+    }
   };
 
   // Metadata to run model with input SOA and fill output SOA.
@@ -121,9 +104,9 @@ namespace torch_alpaka {
     int nElements;
 
     InputMetadata input;
-    OutputMetadata output;
+    Block output;
 
-    ModelMetadata(int nElements_, const InputMetadata& input_, const OutputMetadata& output_)
+    ModelMetadata(int nElements_, const InputMetadata& input_, const Block& output_)
         : nElements(nElements_), input(input_), output(output_) {}
   };
 
@@ -132,29 +115,29 @@ namespace torch_alpaka {
   class Converter {
   public:
     // Calculate size and stride of data store based on InputMetadata and return list of IValue, which is parent class of torch::tensor.
-    static std::vector<torch::IValue> convert_input(const ModelMetadata& mask, torch::Device device, void* arr);
+    static std::vector<torch::IValue> convert_input(const ModelMetadata& mask, torch::Device device);
     // Calculate size and stride of data store based on OutputMetadata and return single output tensor
-    static torch::Tensor convert_output(const ModelMetadata& element, torch::Device device, std::byte* arr);
+    static torch::Tensor convert_output(const ModelMetadata& element, torch::Device device);
 
   private:
-    static std::vector<long int> soa_get_stride(int nElements, Block& block);
-    static std::vector<long int> soa_get_size(int nElements, Block& block);
+    static std::vector<long int> soa_get_stride(int nElements, Block block);
+    static std::vector<long int> soa_get_size(int nElements, Block block);
 
     // Wrap raw pointer by torch::Tensor based on type, size and stride.
     static torch::Tensor array_to_tensor(torch::Device device,
-                                         Block& block,
+                                         Block block,
                                          const std::vector<long int>& size,
                                          const std::vector<long int>& stride);
   };
 
   // SOA_Layout is needed to calculate minimal size of columns, by using alignment info
   template <typename SOA_Layout>
-  std::vector<long int> Converter<SOA_Layout>::soa_get_stride(int nElements, Block& block) {
-    assert(SOA_Layout::alignment % sizeof(*block.ptr) == 0);
+  std::vector<long int> Converter<SOA_Layout>::soa_get_stride(int nElements, Block block) {
+    assert(SOA_Layout::alignment % block.bytes == 0);
 
     int N = block.columns.size() + 1;
     std::vector<long int> stride(N);
-    int per_bunch = SOA_Layout::alignment / sizeof(*block.ptr);
+    int per_bunch = SOA_Layout::alignment / block.bytes;
     int bunches = std::ceil(1.0 * nElements / per_bunch);
 
     if (!block.isScalar)
@@ -178,7 +161,7 @@ namespace torch_alpaka {
   }
 
   template <typename SOA_Layout>
-  std::vector<long int> Converter<SOA_Layout>::soa_get_size(int nElements, Block& block) {
+  std::vector<long int> Converter<SOA_Layout>::soa_get_size(int nElements, Block block) {
     std::vector<long int> size(block.columns.size() + 1);
     size[0] = nElements;
     std::copy(block.columns.columns.begin(), block.columns.columns.end(), size.begin() + 1);
@@ -188,19 +171,17 @@ namespace torch_alpaka {
 
   template <typename SOA_Layout>
   torch::Tensor Converter<SOA_Layout>::array_to_tensor(torch::Device device,
-                                                      Block& block,
+                                                      Block block,
                                                        const std::vector<long int>& size,
-                                                       const std::vector<long int>& stride) {
-    torch::Scalar type = torch::CppTypeToScalarType<typename std::remove_reference<decltype(*block.ptr)>::type>::value;                                                    
-    auto options = torch::TensorOptions().dtype(type).device(device).pinned_memory(true);
+                                                       const std::vector<long int>& stride) {                                                 
+    auto options = torch::TensorOptions().dtype(block.type).device(device).pinned_memory(true);
     return torch::from_blob(block.ptr, size, stride, options);
   }
 
   template <typename SOA_Layout>
   std::vector<torch::IValue> Converter<SOA_Layout>::convert_input(const ModelMetadata& metadata,
-                                                                  torch::Device device,
-                                                                  void* arr) {
-    assert(reinterpret_cast<intptr_t>(arr) % SOA_Layout::alignment == 0);
+                                                                  torch::Device device) {
+    
     std::vector<torch::IValue> tensors(metadata.input.nBlocks);
 
     // Initialize size and stride vector with default dimension for scalar block
@@ -211,6 +192,7 @@ namespace torch_alpaka {
     int N;
 
     for (int i = 0; i < metadata.input.nBlocks; i++) {
+      assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr) % SOA_Layout::alignment == 0);
       N = metadata.input[metadata.input.order[i]].columns.size() + 1;
 
       // Resize if necessary
@@ -222,20 +204,19 @@ namespace torch_alpaka {
       size.resize(N);
       size = Converter<SOA_Layout>::soa_get_size(metadata.nElements, metadata.input[metadata.input.order[i]]);
 
-      tensors.at(i) = std::move(Converter<SOA_Layout>::array_to_tensor(device, metadata.input[metadata.input.order[i]].ptr, size, stride));
+      tensors.at(i) = std::move(Converter<SOA_Layout>::array_to_tensor(device, metadata.input[metadata.input.order[i]], size, stride));
     }
     return tensors;
   }
 
   template <typename SOA_Layout>
   torch::Tensor Converter<SOA_Layout>::convert_output(const ModelMetadata& metadata,
-                                                      torch::Device device,
-                                                      std::byte* arr) {
-    assert(reinterpret_cast<intptr_t>(arr) % SOA_Layout::alignment == 0);
+                                                      torch::Device device) {
+    assert(reinterpret_cast<intptr_t>(metadata.output.ptr) % SOA_Layout::alignment == 0);
     std::vector<long int> stride = Converter<SOA_Layout>::soa_get_stride(metadata.nElements, (Block&)metadata.output);
     std::vector<long int> size = Converter<SOA_Layout>::soa_get_size(metadata.nElements, (Block&)metadata.output);
 
-    return Converter<SOA_Layout>::array_to_tensor(device, metadata.output.ptr, size, stride);
+    return Converter<SOA_Layout>::array_to_tensor(device, metadata.output, size, stride);
   }
 }  // namespace torch_alpaka
 #endif  // PHYSICS_TOOLS__PYTORCH__INTERFACE__CONVERTER_H_

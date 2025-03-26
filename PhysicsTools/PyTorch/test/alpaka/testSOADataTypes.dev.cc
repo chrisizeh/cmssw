@@ -207,33 +207,25 @@ void testSOADataTypes::test() {
   // Create and fill needed portable collections
   PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
   fill(queue, deviceCollection);
-
+  auto view = deviceCollection.view();
+    
   std::map<std::string, Block> blocks;
-  blocks.emplace("normal", {{view.y(), 2}});
-  blocks.emplace("time", {{view.v(), 2}});
-  std::vector<std::string> order = {{"time", "normal"}};
+  blocks.emplace("normal", createBlock(2, view.y()));
+  blocks.emplace("time", createBlock(2, view.v()));
+  std::vector<std::string> order = {"time", "normal"};
+
+  for (const auto& [key, value] : blocks)
+      std::cout << '[' << key << "] = " << value.type << "; ";
 
   InputMetadata input(blocks, order);
-  OutputMetadata output(view.x(), 1);
-  ModelMetadata metadata(batch_size, input, output);
-
-  // alpaka::wait(queue);
-  // std::vector<torch::IValue> tensors =
-  //     Converter<SoA>::convert_input(metadata, torchDevice, deviceCollection.buffer().data());
-
-  auto view = deviceCollection.view();
-  double* ptr = view.y();
-  std::cout << torch::CppTypeToScalarType<typename std::remove_reference<decltype(*view.y())>::type>::value << std::endl; 
-
-  InputMetadata input(Double, 2);
-  OutputMetadata output(Double, 3);
+  Block output = createBlock<>(1, view.x());
   ModelMetadata metadata(batch_size, input, output);
 
   alpaka::wait(queue);
   std::vector<torch::IValue> tensors =
-      Converter<SoA>::convert_input(metadata, torchDevice, ptr);
+      Converter<SoA>::convert_input(metadata, torchDevice);
 
-  std::cout << tensors[0] << std::endl;
+  // std::cout << tensors[0] << std::endl;
 
   // Check if tensor list built correctly
   // check(queue, deviceCollection, tensors);
