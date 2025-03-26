@@ -209,12 +209,12 @@ void testSOADataTypes::test() {
   fill(queue, deviceCollection);
 
   std::map<std::string, Block> blocks;
-  m["normal"] = Block(view.y(), 2);
-  m["time"] = Block(view.v(), 2);
+  blocks.emplace("normal", {{view.y(), 2}});
+  blocks.emplace("time", {{view.v(), 2}});
   std::vector<std::string> order = {{"time", "normal"}};
 
   InputMetadata input(blocks, order);
-  OutputMetadata output(Double, 3);
+  OutputMetadata output(view.x(), 1);
   ModelMetadata metadata(batch_size, input, output);
 
   // alpaka::wait(queue);
