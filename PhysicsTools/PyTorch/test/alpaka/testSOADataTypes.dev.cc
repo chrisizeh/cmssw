@@ -208,22 +208,16 @@ void testSOADataTypes::test() {
   PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
   fill(queue, deviceCollection);
   auto view = deviceCollection.view();
-    
-  std::map<std::string, Block> blocks;
-  blocks.emplace("normal", createBlock(2, view.y()));
-  blocks.emplace("time", createBlock(2, view.v()));
-  std::vector<std::string> order = {"time", "normal"};
 
-  for (const auto& [key, value] : blocks)
-      std::cout << '[' << key << "] = " << value.type << "; ";
+    InputMetadata input;
+    input.appendBlock("normal", 2, view.y());
+    input.appendBlock("time", 2, view.v());
+    Block output = createBlock<>(1, view.x());
+    ModelMetadata metadata(batch_size, input, output);
 
-  InputMetadata input(blocks, order);
-  Block output = createBlock<>(1, view.x());
-  ModelMetadata metadata(batch_size, input, output);
-
-  alpaka::wait(queue);
-  std::vector<torch::IValue> tensors =
-      Converter<SoA>::convert_input(metadata, torchDevice);
+    // alpaka::wait(queue);
+    // std::vector<torch::IValue> tensors =
+    //     Converter<SoA>::convert_input(metadata, torchDevice);
 
   // std::cout << tensors[0] << std::endl;
 

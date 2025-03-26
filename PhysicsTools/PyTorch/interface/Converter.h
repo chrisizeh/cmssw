@@ -15,7 +15,11 @@ namespace torch_alpaka {
   }
 
   // Wrapper struct to merge info about scalar columns and multidimensional eigen columns
+  // template <size_t dim>
   struct Columns {
+    // CHECK
+    // std::array<int, 2> columns;
+
     std::vector<int> columns;
 
     // Constructor for scalar columns
@@ -29,7 +33,6 @@ namespace torch_alpaka {
     int operator[](int i) const { return columns[i]; }
   };
 
-  // Generic metadata element, which stores necessary information of SOA block.
   struct Block {
     void* ptr;
     Columns columns;
@@ -39,8 +42,6 @@ namespace torch_alpaka {
     bool isScalar;
 
     Block() : ptr(nullptr), columns(0) {}
-    // Block(Block& block) : ptr(block.ptr), columns(block.columns), isScalar(block.isScalar) {}
-
     Block(void* ptr_, const Columns& columns_, torch::ScalarType type_, size_t bytes_) : ptr(ptr_), columns(columns_), type(type_), bytes(bytes_) {
       // Use columns=0 to define scalar, but change to 1 to calculate correct size
       isScalar = (columns[0] == 0);
@@ -50,7 +51,7 @@ namespace torch_alpaka {
   };
 
   template <typename T>
-  static Block createBlock(const Columns& columns, T* ptr) {
+  Block createBlock(const Columns& columns, T* ptr) {
     torch::ScalarType type = torch::CppTypeToScalarType<typename std::remove_reference<decltype(*ptr)>::type>();  
     size_t bytes = sizeof(T);
     return Block(ptr, columns, type, bytes);
@@ -63,31 +64,23 @@ namespace torch_alpaka {
   private:
     std::map<std::string, Block> blocks;
 
+    template <typename T>
+    inline static torch::ScalarType getType(T* ptr) {
+      return torch::CppTypeToScalarType<typename std::remove_reference<decltype(*ptr)>::type>();
+    }
+
   public:
     // Order of resulting tensor list
     std::vector<std::string> order;
     int nBlocks;
 
-    // Constructor, if all blocks should be converted in initial ordering.
-    InputMetadata(const std::map<std::string, Block>& blocks_) : blocks(blocks_) {
-      nBlocks = blocks.size();
+    InputMetadata() : nBlocks(0) {}
 
-      for (const auto& [key, value] : blocks)
-        order.push_back(key);
-    }
-
-    // Constructor, if a special ordering should be created.
-    InputMetadata(const std::map<std::string, Block>& blocks_,
-                  const std::vector<std::string>& order_)
-        : blocks(blocks_), order(order_) {}
-
-    InputMetadata(const std::map<std::string, Block>& blocks_,
-                  std::vector<std::string>&& order_)
-        : blocks(blocks_), order(std::move(order_)) {}
-
-    InputMetadata(Block&& block) {
-      blocks["default"] = std::move(block);
-      order.push_back("default");
+    template <typename T>
+    void appendBlock(std::string name, const Columns& columns, T* ptr) {
+      blocks.try_emplace(name, ptr, columns, getType(ptr), sizeof(T));
+      order.push_back(name);
+      nBlocks += 1;
     }
 
     Block operator[](std::string key) const { 
