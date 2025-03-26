@@ -55,9 +55,11 @@ GENERATE_SOA_LAYOUT(SoATemplate,
   SOA_COLUMN(double, y),
   SOA_COLUMN(double, z),
 
+  SOA_COLUMN(double, v),
+  SOA_COLUMN(double, w),
+
   SOA_SCALAR(float, type),
-  SOA_SCALAR(int, someNumber)
-);
+  SOA_SCALAR(int, someNumber));
 
 using SoA = SoATemplate<>;
 using SoAView = SoA::View;
@@ -206,10 +208,14 @@ void testSOADataTypes::test() {
   PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
   fill(queue, deviceCollection);
 
-  // Run Converter for single tensor
-  // InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
-  // OutputMetadata output(Double, 3);
-  // ModelMetadata metadata(batch_size, input, output);
+  std::map<std::string, Block> blocks;
+  m["normal"] = Block(view.y(), 2);
+  m["time"] = Block(view.v(), 2);
+  std::vector<std::string> order = {{"time", "normal"}};
+
+  InputMetadata input(blocks, order);
+  OutputMetadata output(Double, 3);
+  ModelMetadata metadata(batch_size, input, output);
 
   // alpaka::wait(queue);
   // std::vector<torch::IValue> tensors =
