@@ -177,9 +177,9 @@ namespace torch_alpaka {
   class Converter {
   public:
     // Calculate size and stride of data store based on InputMetadata and return list of IValue, which is parent class of torch::tensor.
-    static std::vector<torch::IValue> convert_input(const ModelMetadata& mask, torch::Device device, std::byte* arr);
+    static std::vector<torch::IValue> convert_input(const ModelMetadata& mask, torch::Device device, const std::byte* arr);
     // Calculate size and stride of data store based on OutputMetadata and return single output tensor
-    static torch::Tensor convert_output(const ModelMetadata& element, torch::Device device, std::byte* arr);
+    static torch::Tensor convert_output(const ModelMetadata& element, torch::Device device, const std::byte* arr);
 
   private:
     static std::vector<long int> soa_get_stride(bool isScalar, int nElements, int bytes, const Columns& columns);
@@ -188,7 +188,7 @@ namespace torch_alpaka {
     // Wrap raw pointer by torch::Tensor based on type, size and stride.
     static torch::Tensor array_to_tensor(torch::Device device,
                                          torch::ScalarType type,
-                                         std::byte* arr,
+                                         const std::byte* arr,
                                          const std::vector<long int>& size,
                                          const std::vector<long int>& stride);
   };
@@ -237,8 +237,8 @@ namespace torch_alpaka {
 
   template <typename SOA_Layout>
   torch::Tensor Converter<SOA_Layout>::array_to_tensor(torch::Device device,
-                                                       torch::ScalarType type,
-                                                       std::byte* arr,
+                                                      torch::ScalarType type,
+                                                       const std::byte* arr,
                                                        const std::vector<long int>& size,
                                                        const std::vector<long int>& stride) {
     auto options = torch::TensorOptions().dtype(type).device(device).pinned_memory(true);
@@ -248,7 +248,7 @@ namespace torch_alpaka {
   template <typename SOA_Layout>
   std::vector<torch::IValue> Converter<SOA_Layout>::convert_input(const ModelMetadata& metadata,
                                                                   torch::Device device,
-                                                                  std::byte* arr) {
+                                                                  const std::byte* arr) {
     assert(reinterpret_cast<intptr_t>(arr) % SOA_Layout::alignment == 0);
     std::vector<torch::IValue> tensors(metadata.input.nTensors);
 
@@ -287,7 +287,7 @@ namespace torch_alpaka {
   template <typename SOA_Layout>
   torch::Tensor Converter<SOA_Layout>::convert_output(const ModelMetadata& metadata,
                                                       torch::Device device,
-                                                      std::byte* arr) {
+                                                      const std::byte* arr) {
     assert(reinterpret_cast<intptr_t>(arr) % SOA_Layout::alignment == 0);
     std::vector<long int> stride = Converter<SOA_Layout>::soa_get_stride(
         metadata.output.isScalar, metadata.nElements, metadata.output.bytes, metadata.output.columns);
