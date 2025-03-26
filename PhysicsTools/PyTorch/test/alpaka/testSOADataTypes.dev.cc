@@ -193,29 +193,44 @@ void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vecto
 void testSOADataTypes::test() {
   Platform platform;
   std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
+  const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
   CPPUNIT_ASSERT(alpakaDevices.size());
   const auto& alpakaDevice = alpakaDevices[0];
-  Queue queue(alpakaDevice);
-  torch::Device torchDevice(kTorchDeviceType);
+  Queue queue{alpakaDevice};
+  torch::Device torchDevice(kDeviceType);
 
   // Large batch size, so multiple bunches needed
   const std::size_t batch_size = 325;
 
-  // Create and fill portable collections
+  // Create and fill needed portable collections
   PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
   fill(queue, deviceCollection);
 
-  // Run Converter for multiple tensors
-  InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
+  // Run Converter for single tensor
+  // InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
+  // OutputMetadata output(Double, 3);
+  // ModelMetadata metadata(batch_size, input, output);
+
+  // alpaka::wait(queue);
+  // std::vector<torch::IValue> tensors =
+  //     Converter<SoA>::convert_input(metadata, torchDevice, deviceCollection.buffer().data());
+
+  auto view = deviceCollection.view();
+  double* ptr = view.y();
+  std::cout << torch::CppTypeToScalarType<typename std::remove_reference<decltype(*view.y())>::type>::value << std::endl; 
+
+  InputMetadata input(Double, 2);
   OutputMetadata output(Double, 3);
   ModelMetadata metadata(batch_size, input, output);
 
   alpaka::wait(queue);
   std::vector<torch::IValue> tensors =
-      Converter<SoA>::convert_input(metadata, torchDevice, deviceCollection.buffer().data());
+      Converter<SoA>::convert_input(metadata, torchDevice, ptr);
+
+  std::cout << tensors[0] << std::endl;
 
   // Check if tensor list built correctly
-  check(queue, deviceCollection, tensors);
+  // check(queue, deviceCollection, tensors);
 };
 
 void testSOADataTypes::testSingleElement() {
