@@ -58,8 +58,8 @@ GENERATE_SOA_LAYOUT(SoATemplate,
   SOA_COLUMN(double, v),
   SOA_COLUMN(double, w),
 
-  SOA_SCALAR(float, type),
-  SOA_SCALAR(int, someNumber));
+  SOA_SCALAR(int, someNumber),
+  SOA_SCALAR(float, type));
 
 using SoA = SoATemplate<>;
 using SoAView = SoA::View;
@@ -209,20 +209,22 @@ void testSOADataTypes::test() {
   fill(queue, deviceCollection);
   auto view = deviceCollection.view();
 
-    InputMetadata input;
-    input.appendBlock("normal", 2, view.y());
-    input.appendBlock("time", 2, view.v());
-    Block output = createBlock<>(1, view.x());
-    ModelMetadata metadata(batch_size, input, output);
+  SoAMetadata input;
+  input.appendBlock("normal", 3, view.x());
+  input.appendBlock("scalar", view.type());
+  input.appendBlock("matrix", {{1, 2, 2}}, view.c());
+  input.appendBlock("vector", {{2, 3}}, view.a());
 
-    // alpaka::wait(queue);
-    // std::vector<torch::IValue> tensors =
-    //     Converter<SoA>::convert_input(metadata, torchDevice);
+  SoAMetadata output;
+  output.appendBlock("result", 2, view.v());
+  ModelMetadata metadata(batch_size, input, output);
 
-  // std::cout << tensors[0] << std::endl;
+  alpaka::wait(queue);
+  std::vector<torch::IValue> tensors =
+      Converter<SoA>::convert_input(metadata, torchDevice);
 
   // Check if tensor list built correctly
-  // check(queue, deviceCollection, tensors);
+  check(queue, deviceCollection, tensors);
 };
 
 void testSOADataTypes::testSingleElement() {
