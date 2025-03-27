@@ -1,0 +1,14 @@
+<lcgdict>
+  <!-- Input -->
+  <class name="SimpleInputSoA"/>
+  <class name="SimpleInputSoA::View"/>
+  <class name="SimpleInputSoA::ConstView"/>
+  <class name="SimpleInputCollectionHost"/>
+  <class name="edm::Wrapper<SimpleInputCollectionHost>" splitLevel="0"/>
+  <!-- Output -->
+  <class name="SimpleOutputSoA"/>
+  <class name="SimpleOutputSoA::View"/>
+  <class name="SimpleOutputSoA::ConstView"/>
+  <class name="SimpleOutputCollectionHost"/>
+  <class name="edm::Wrapper<SimpleOutputCollectionHost>" splitLevel="0"/>
+</lcgdict>

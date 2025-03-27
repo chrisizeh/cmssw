@@ -1,0 +1,11 @@
+<use name="alpaka"/>
+<use name="DataFormats/PyTorchAlpakaTest"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/MessageLogger"/>
+<use name="FWCore/Utilities"/>
+<use name="FWCore/ServiceRegistry"/>
+<use name="PhysicsTools/PyTorchAlpaka"/>
+<flags ALPAKA_BACKENDS="1"/>
+<export>
+  <lib name="1"/>
+</export>

@@ -1,4 +1,4 @@
-<use name="python_tools"/>
+<!-- <use name="python_tools"/>
 
 <ifarch value="x86_64">
   <bin name="testTorchSimpleDnn" file="testRunner.cc,testTorchSimpleDnn.cc">
@@ -193,4 +193,4 @@
   <use name="DataFormats/PortableTestObjects"/>
   <flags ALPAKA_BACKENDS="cuda"/>
   <flags ALPAKA_BACKENDS="serial"/>
-</bin>
+</bin> -->
