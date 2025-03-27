@@ -10,8 +10,9 @@
 #include <cuda_runtime.h>
 #endif
 
+#include <string>
+
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-// #include "PhysicsTools/PyTorchAlpaka/interface/Tools.h"
 
 
 namespace torch_alpaka {
@@ -36,6 +37,14 @@ inline torch::Device device(const ALPAKA_ACCELERATOR_NAMESPACE::Device &dev) {
 
 inline torch::Device device(const ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
   return torch::Device(kTorchDeviceType, alpaka::getDev(queue).getNativeHandle());
+}
+
+inline torch::jit::script::Module load(const std::string &model_path) {
+  try {
+    return torch::jit::load(model_path);
+  } catch (const c10::Error &e) {
+    throw std::runtime_error("Error loading the model: " + std::string(e.what()));
+  }
 }
      
 }  // namespace torch_alpaka::tools
@@ -75,7 +84,7 @@ template <>
 inline void set_guard(const alpaka_rocm_async::Queue &queue) {}
 inline void reset_guard() {}
 
-#elif defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED) || defined(ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED)
+#elif ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED 
 
 template <>
 inline void set_guard(const alpaka_serial_sync::Queue &queue) {
@@ -88,8 +97,21 @@ inline void set_guard(const alpaka_serial_sync::Queue &queue) {
 
 inline void reset_guard() {}
 
+#elif ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
+
+template <>
+inline void set_guard(const alpaka_tbb_async::Queue &queue) {
+  [[maybe_unused]] static bool initialized = [] {
+    at::set_num_threads(1);
+    at::set_num_interop_threads(1);
+    return true;
+  }();
+}
+
+inline void reset_guard() {}
+
 #else
-#error "Could not define the torch device type."
+#error "Could ."
 #endif
 
 template <typename TBuf>

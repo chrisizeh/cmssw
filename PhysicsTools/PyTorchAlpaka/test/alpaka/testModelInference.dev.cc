@@ -7,26 +7,29 @@
 #include <cuda_runtime.h>
 #endif
 
+#if defined(ALPAKA_ACC_GPU_CUDA_ENABLED) || defined(ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED) || \
+    defined(ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED)
+#include <nvtx3/nvToolsExt.h>
+#endif
+
 #include <cmath>
 #include <exception>
 #include <iostream>
 #include <memory>
 #include <sys/prctl.h>
 
-#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
-#include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "DataFormats/Portable/interface/PortableCollection.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/memory.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/workdivision.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/AlpakaConfig.h"
-#include "PhysicsTools/PyTorchAlpaka/interface/Converter.h"
+#include "PhysicsTools/PyTorchAlpaka/interface/Model.h"
 #include "PhysicsTools/PyTorchAlpaka/test/testBase.h"
 
-
-namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
-
-using namespace ::torch_alpaka;
+using namespace ALPAKA_ACCELERATOR_NAMESPACE;
+using namespace torch_alpaka;
 
 // Input SOA
 GENERATE_SOA_LAYOUT(SoAPositionTemplate, 
@@ -48,8 +51,8 @@ GENERATE_SOA_LAYOUT(SoAResultTemplate,
 using SoAResult = SoAResultTemplate<>;
 using SoAResultView = SoAResult::View;
 
-class testSOAToTorch : public testBasePyTorch {
-  CPPUNIT_TEST_SUITE(testSOAToTorch);
+class testModelInference : public testBasePyTorch {
+  CPPUNIT_TEST_SUITE(testModelInference);
   CPPUNIT_TEST(test);
   CPPUNIT_TEST_SUITE_END();
 
@@ -58,20 +61,9 @@ class testSOAToTorch : public testBasePyTorch {
   void test() override;
 };
 
-CPPUNIT_TEST_SUITE_REGISTRATION(testSOAToTorch);
+CPPUNIT_TEST_SUITE_REGISTRATION(testModelInference);
 
-std::string testSOAToTorch::pyScript() const { return "create_linear_dnn.py"; }
-
-// Build Tensor, run model and fill output pointer with result
-template <typename SOA_Input, typename SOA_Output>
-void run(torch::Device device,
-         torch::jit::script::Module model,
-         ModelMetadata metadata,
-         std::byte* input,
-         std::byte* output) {
-  std::vector<torch::jit::IValue> input_tensor = Converter<SOA_Input>::convert_input(metadata, device, input);
-  Converter<SOA_Output>::convert_output(metadata, device, output) = model.forward(input_tensor).toTensor();
-}
+std::string testModelInference::pyScript() const { return "create_linear_dnn.py"; }
 
 class FillKernel {
  public:
@@ -113,14 +105,13 @@ void check(Queue& queue, PortableCollection<SoAResult, Device>& collection) {
   alpaka::exec<Acc1D>(queue, workDiv, TestVerifyKernel{}, collection.view());
 }
 
-void testSOAToTorch::test() {
+void testModelInference::test() {
   Platform platform;
   std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
   const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
   CPPUNIT_ASSERT(alpakaDevices.size());
   const auto& alpakaDevice = alpakaDevices[0];
   Queue queue{alpakaDevice};
-  torch::Device torchDevice(kTorchDeviceType);
 
   // Number of elements
   const std::size_t batch_size = 4;
@@ -131,24 +122,16 @@ void testSOAToTorch::test() {
   fill(queue, positionCollection);
   alpaka::wait(queue);
 
-  torch::jit::script::Module model;
-  try {
-    // Deserialize the ScriptModule from a file using torch::jit::load().
-    std::string model_path = dataPath_ + "/linear_dnn.pt";
-    model = torch::jit::load(model_path);
-    model.to(torchDevice);
+  std::string model_path = dataPath_ + "/linear_dnn.pt";
 
-  } catch (const c10::Error& e) {
-    std::cerr << "error loading the model\n" << e.what() << std::endl;
-  }
+  auto model = Model(model_path);
+  model.to(queue);
+  CPPUNIT_ASSERT(tools::device(queue) == model.device());
 
-  // Call function to build tensor and run model
   InputMetadata inputMask(Float, 3);
-  ModelMetadata mask(batch_size, inputMask, OutputMetadata(Float, 2));
+  OutputMetadata outputMask(Float, 2); 
+  ModelMetadata metadata(batch_size, inputMask, outputMask);
 
-  run<SoAPosition, SoAResult>(
-      torchDevice, model, mask, positionCollection.buffer().data(), resultCollection.buffer().data());
+  model.forward<SoAPosition, SoAResult>(metadata, positionCollection.buffer().data(), resultCollection.buffer().data());
   check(queue, resultCollection);
-}
-
 }

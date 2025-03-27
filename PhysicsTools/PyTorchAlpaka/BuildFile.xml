@@ -2,6 +2,7 @@
 <use name="FWCore/MessageLogger"/>
 <use name="FWCore/Utilities"/>
 <use name="FWCore/ServiceRegistry"/>
+<use name="HeterogeneousCore/AlpakaInterface"/>
 <use name="pytorch"/>
 <use name="pytorch-cuda"/>
 <export>
