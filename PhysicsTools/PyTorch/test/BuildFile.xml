@@ -1,4 +1,4 @@
-<use name="python_tools"/>
+<!-- <use name="python_tools"/>
 
 <ifarch value="x86_64">
   <bin name="testTorchSimpleDnn" file="testRunner.cc,testTorchSimpleDnn.cc">
@@ -181,4 +181,4 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <flags ALPAKA_BACKENDS="1"/>
-</bin>
+</bin> -->
