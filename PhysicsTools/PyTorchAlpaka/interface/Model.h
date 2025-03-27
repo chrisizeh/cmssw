@@ -1,0 +1,8 @@
+#ifndef PHYSICS_TOOLS__PYTORCH_ALPAKA__INTERFACE__MODEL_H_
+#define PHYSICS_TOOLS__PYTORCH_ALPAKA__INTERFACE__MODEL_H_
+
+namespace torch_alpaka {
+
+}  // namespace torch_alpaka
+
+#endif  // PHYSICS_TOOLS__PYTORCH_ALPAKA__INTERFACE__MODEL_H_

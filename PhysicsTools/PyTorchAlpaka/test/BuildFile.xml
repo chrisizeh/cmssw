@@ -1,0 +1,184 @@
+<use name="python_tools"/>
+
+<ifarch value="x86_64">
+  <bin name="testTorchSimpleDnn" file="testRunner.cc,testTorchSimpleDnn.cc">
+    <use name="pytorch"/>
+    <use name="boost_filesystem"/>
+    <use name="cppunit"/>
+  </bin>
+</ifarch>
+
+<iftool name="cuda">
+  <bin name="testTorchSimpleDnnCUDA" file="testRunner.cc,testTorchSimpleDnnCUDA.cc">
+    <use name="boost_filesystem"/>
+    <use name="catch2"/>
+    <use name="cppunit"/>
+    <use name="cuda"/>
+    <use name="pytorch"/>
+    <use name="FWCore/ParameterSet"/>
+    <use name="FWCore/ParameterSetReader"/>
+    <use name="FWCore/PluginManager"/>
+    <use name="FWCore/ServiceRegistry"/>
+    <use name="FWCore/Utilities"/>
+    <use name="HeterogeneousCore/CUDAServices"/>
+  </bin>
+</iftool>
+
+<iftool name="cuda">
+  <bin name="testTorchFromBufferPinnedMemory" file="testTorchFromBufferPinnedMemory.cu">
+    <use name="boost_filesystem"/>
+    <use name="catch2"/>
+    <use name="cppunit"/>
+    <use name="cuda"/>
+    <use name="pytorch"/>
+    <use name="FWCore/ParameterSet"/>
+    <use name="FWCore/ParameterSetReader"/>
+    <use name="FWCore/PluginManager"/>
+    <use name="FWCore/ServiceRegistry"/>
+    <use name="FWCore/Utilities"/>
+    <use name="HeterogeneousCore/CUDAServices"/>
+  </bin>
+</iftool>
+
+<iftool name="cuda">
+  <bin name="testTorchFromBufferModelEval" file="testRunner.cc,testTorchFromBufferModelEval.cu">
+    <use name="boost_filesystem"/>
+    <use name="catch2"/>
+    <use name="cppunit"/>
+    <use name="cuda"/>
+    <use name="pytorch"/>
+    <use name="FWCore/ParameterSet"/>
+    <use name="FWCore/ParameterSetReader"/>
+    <use name="FWCore/PluginManager"/>
+    <use name="FWCore/ServiceRegistry"/>
+    <use name="FWCore/Utilities"/>
+    <use name="HeterogeneousCore/CUDAServices"/>
+  </bin>
+</iftool>
+
+<iftool name="cuda">
+  <bin name="testTorchFromBufferModelEvalLarge" file="testRunner.cc,testTorchFromBufferModelEvalLarge.cu">
+    <use name="boost_filesystem"/>
+    <use name="catch2"/>
+    <use name="cppunit"/>
+    <use name="cuda"/>
+    <use name="pytorch"/>
+    <use name="FWCore/ParameterSet"/>
+    <use name="FWCore/ParameterSetReader"/>
+    <use name="FWCore/PluginManager"/>
+    <use name="FWCore/ServiceRegistry"/>
+    <use name="FWCore/Utilities"/>
+    <use name="HeterogeneousCore/CUDAServices"/>
+  </bin>
+</iftool>
+
+<iftool name="cuda">
+  <bin name="testTorchFromBufferModelEvalMTMS" file="testRunner.cc,testTorchFromBufferModelEvalMTMS.cu">
+    <use name="boost_filesystem"/>
+    <use name="catch2"/>
+    <use name="cppunit"/>
+    <use name="cuda"/>
+    <use name="pytorch"/>
+    <use name="pytorch-cuda"/>
+    <use name="FWCore/ParameterSet"/>
+    <use name="FWCore/ParameterSetReader"/>
+    <use name="FWCore/PluginManager"/>
+    <use name="FWCore/ServiceRegistry"/>
+    <use name="FWCore/Utilities"/>
+    <use name="HeterogeneousCore/CUDAServices"/>
+    <use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
+</iftool>
+
+
+<bin name="testTorch" file="testTorch.cc">
+  <use name="pytorch"/>
+</bin>
+
+<bin name="testTorchTimeSeries" file="time_serie_prediction.cpp">
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+</bin>
+
+<iftool name="cuda">
+<bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
+  <use name="boost_filesystem"/>
+  <use name="catch2"/>
+  <use name="cppunit"/>
+  <use name="cuda"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/ParameterSetReader"/>
+  <use name="FWCore/PluginManager"/>
+  <use name="FWCore/ServiceRegistry"/>
+  <use name="FWCore/Utilities"/>
+  <use name="HeterogeneousCore/CUDAServices"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
+</bin>
+</iftool>
+
+<iftool name="cuda">
+<bin name="testTensorStride" file="testRunner.cc,testTensorStride.cu">
+  <use name="boost_filesystem"/>
+  <use name="catch2"/>
+  <use name="cppunit"/>
+  <use name="cuda"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/ParameterSetReader"/>
+  <use name="FWCore/PluginManager"/>
+  <use name="FWCore/ServiceRegistry"/>
+  <use name="FWCore/Utilities"/>
+  <use name="HeterogeneousCore/CUDAServices"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
+</bin>
+</iftool>
+
+<bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch-alpaka">
+  <use name="boost_filesystem"/>
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial"/>
+</bin>
+
+<bin file="alpaka/testSOADataTypes.dev.cc testRunner.cc" name="testSOADatatypes-alpaka">
+  <use name="boost_filesystem"/>
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="eigen"/>
+  <use name="DataFormats/Portable"/>
+  <use name="DataFormats/PortableTestObjects"/>
+  <use name="FWCore/Framework"/>
+  <use name="FWCore/ParameterSet"/>
+  <use name="FWCore/Utilities"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
+  <flags ALPAKA_BACKENDS="cuda"/>
+  <flags ALPAKA_BACKENDS="serial"/>
+</bin>
+
+
+<bin file="alpaka/testTorchMTMS.cc testRunner.cc" name="testTorchMTMS-alpaka">
+  <use name="boost_filesystem"/>
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <flags ALPAKA_BACKENDS="1"/>
+</bin>
+
+<bin file="alpaka/testTorchMTMS-localNN.cc testRunner.cc" name="testTorchMTMS-localNN-alpaka">
+  <use name="boost_filesystem"/>
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <flags ALPAKA_BACKENDS="1"/>
+</bin>
