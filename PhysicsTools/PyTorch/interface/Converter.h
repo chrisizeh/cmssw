@@ -1,8 +1,13 @@
 #ifndef PHYSICS_TOOLS__PYTORCH__INTERFACE__CONVERTER_H_
 #define PHYSICS_TOOLS__PYTORCH__INTERFACE__CONVERTER_H_
 
+#include <iostream>
 #include <torch/torch.h>
 #include <vector>
+
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include "DataFormats/SoATemplate/interface/SoALayout.h"
 
 namespace torch_alpaka {
 
@@ -31,6 +36,7 @@ namespace torch_alpaka {
 
     size_t size() const { return columns.size(); }
     int operator[](int i) const { return columns[i]; }
+    void push(int i) {columns.push_back(i); }
   };
 
   struct Block {
@@ -39,34 +45,26 @@ namespace torch_alpaka {
     
     torch::ScalarType type;
     size_t bytes;
-    bool isScalar;
+    bool isScalar = false;
 
     Block() : ptr(nullptr), columns(0) {}
-    Block(void* ptr_, const Columns& columns_, torch::ScalarType type_, size_t bytes_) : ptr(ptr_), columns(columns_), type(type_), bytes(bytes_) {
-      // Use columns=0 to define scalar, but change to 1 to calculate correct size
-      isScalar = (columns[0] == 0);
-      if (isScalar)
-        columns.columns[0] = 1;
+    Block(void* ptr_, const Columns& columns_, torch::ScalarType type_, size_t bytes_) : ptr(ptr_), columns(columns_), type(type_), bytes(bytes_) {}
+
+    Block(void* ptr_, torch::ScalarType type_, size_t bytes_) : ptr(ptr_), columns(1), type(type_), bytes(bytes_) {
+      isScalar = true;
     }
   };
-
-  template <typename T>
-  Block createBlock(const Columns& columns, T* ptr) {
-    torch::ScalarType type = torch::CppTypeToScalarType<typename std::remove_reference<decltype(*ptr)>::type>();  
-    size_t bytes = sizeof(T);
-    return Block(ptr, columns, type, bytes);
-  }
 
   // Metadata for input SOA split into multiple blocks.
   // An order for the resulting tensors can be defined.
   // Blocks can be masked by setting "-1" as the order position.
-  struct InputMetadata {
+  struct SoAMetadata {
   private:
     std::map<std::string, Block> blocks;
 
     template <typename T>
-    inline static torch::ScalarType getType(T* ptr) {
-      return torch::CppTypeToScalarType<typename std::remove_reference<decltype(*ptr)>::type>();
+    inline static torch::ScalarType getType() {
+      return torch::CppTypeToScalarType<T>();
     }
 
   public:
@@ -74,13 +72,36 @@ namespace torch_alpaka {
     std::vector<std::string> order;
     int nBlocks;
 
-    InputMetadata() : nBlocks(0) {}
+    SoAMetadata() : nBlocks(0) {}
+
+    template <typename T, int rows, int cols>
+    void appendEigenBlock(std::string name, const int columns, Eigen::Map<Eigen::Matrix<T, rows, cols>, 0, Eigen::InnerStride<>> ptr) {
+      void* p = &ptr(0, 0);
+      Columns col({columns, rows});
+      if(cols > 1)
+        col.push(cols);        
+      
+      blocks.try_emplace(name, p, col, getType<T>(), sizeof(T));
+      order.push_back(name);
+      nBlocks += 1;
+    }
 
     template <typename T>
     void appendBlock(std::string name, const Columns& columns, T* ptr) {
-      blocks.try_emplace(name, ptr, columns, getType(ptr), sizeof(T));
+      blocks.try_emplace(name, ptr, columns, getType<T>(), sizeof(T));
       order.push_back(name);
       nBlocks += 1;
+    }
+
+    template <typename T>
+    void appendBlock(std::string name, T& ptr) {
+      blocks.try_emplace(name, &ptr, getType<T>(), sizeof(T));
+      order.push_back(name);
+      nBlocks += 1;
+    }
+
+    void changeOrder(const std::vector<std::string>& new_order) {
+      order = new_order;
     }
 
     Block operator[](std::string key) const { 
@@ -96,10 +117,10 @@ namespace torch_alpaka {
   public:
     int nElements;
 
-    InputMetadata input;
-    Block output;
+    SoAMetadata input;
+    SoAMetadata output;
 
-    ModelMetadata(int nElements_, const InputMetadata& input_, const Block& output_)
+    ModelMetadata(int nElements_, const SoAMetadata& input_, const SoAMetadata& output_)
         : nElements(nElements_), input(input_), output(output_) {}
   };
 
@@ -205,11 +226,11 @@ namespace torch_alpaka {
   template <typename SOA_Layout>
   torch::Tensor Converter<SOA_Layout>::convert_output(const ModelMetadata& metadata,
                                                       torch::Device device) {
-    assert(reinterpret_cast<intptr_t>(metadata.output.ptr) % SOA_Layout::alignment == 0);
-    std::vector<long int> stride = Converter<SOA_Layout>::soa_get_stride(metadata.nElements, (Block&)metadata.output);
-    std::vector<long int> size = Converter<SOA_Layout>::soa_get_size(metadata.nElements, (Block&)metadata.output);
+    assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[0]].ptr) % SOA_Layout::alignment == 0);
+    std::vector<long int> stride = Converter<SOA_Layout>::soa_get_stride(metadata.nElements, metadata.output[metadata.output.order[0]]);
+    std::vector<long int> size = Converter<SOA_Layout>::soa_get_size(metadata.nElements, metadata.output[metadata.output.order[0]]);
 
-    return Converter<SOA_Layout>::array_to_tensor(device, metadata.output, size, stride);
+    return Converter<SOA_Layout>::array_to_tensor(device, metadata.output[metadata.output.order[0]], size, stride);
   }
 }  // namespace torch_alpaka
 #endif  // PHYSICS_TOOLS__PYTORCH__INTERFACE__CONVERTER_H_

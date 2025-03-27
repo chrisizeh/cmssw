@@ -142,6 +142,7 @@
   <use name="cppunit"/>
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
+  <use name="eigen"/>
   <flags ALPAKA_BACKENDS="cuda"/>
   <flags ALPAKA_BACKENDS="serial"/>
 </bin>

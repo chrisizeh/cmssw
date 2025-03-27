@@ -209,11 +209,14 @@ void testSOADataTypes::test() {
   fill(queue, deviceCollection);
   auto view = deviceCollection.view();
 
+  auto view = deviceCollection.view();
   SoAMetadata input;
+  input.appendEigenBlock("vector", 2, view[0].a());
+  input.appendEigenBlock("matrix", 1, view[0].c());
+  input.appendBlock("matrix2", {{1, 2, 2}}, view.c());
   input.appendBlock("normal", 3, view.x());
   input.appendBlock("scalar", view.type());
-  input.appendBlock("matrix", {{1, 2, 2}}, view.c());
-  input.appendBlock("vector", {{2, 3}}, view.a());
+  input.changeOrder({"normal", "scalar", "matrix", "vector", "matrix2"});
 
   SoAMetadata output;
   output.appendBlock("result", 2, view.v());
