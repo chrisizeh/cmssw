@@ -29,7 +29,7 @@ void testBasePyTorch::setUp() {
       cmsswPath("/test/" + std::string(std::getenv("SCRAM_ARCH")) + "/" + boost::filesystem::unique_path().string());
 
   // create the graph using apptainer
-  std::string testPath = cmsswPath("/src/PhysicsTools/PyTorch/test");
+  std::string testPath = cmsswPath("/src/PhysicsTools/PyTorchAlpaka/test");
   std::string cmd = "apptainer exec -B " + cmsswPath("") +
                     "  /cvmfs/unpacked.cern.ch/registry.hub.docker.com/cmsml/cmsml:3.11  python " + testPath + "/" +
                     pyScript() + " " + dataPath_;

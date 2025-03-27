@@ -12,8 +12,10 @@ GENERATE_SOA_LAYOUT(SimpleInLayout,
 )
 using SimpleInputSoA = SimpleInLayout<>;
 
+
 GENERATE_SOA_LAYOUT(SimpleOutLayout,
-  SOA_COLUMN(float, probs)
+  SOA_COLUMN(float, correct_prob),
+  SOA_COLUMN(float, not_correct_prob)
 )
 using SimpleOutputSoA = SimpleOutLayout<>;
 

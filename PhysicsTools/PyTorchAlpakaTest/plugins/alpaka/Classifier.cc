@@ -24,18 +24,18 @@ void Classifier::produce(device::Event &event, const device::EventSetup &event_s
   const auto& inputs = event.get(inputs_token_);
   const size_t batch_size = inputs.const_view().metadata().size();
   auto inputs_tmp = SimpleInputCollection(batch_size, event.queue());
-  auto outputs = SimpleOutputCollection(number_of_classes_, event.queue());
+  auto outputs = SimpleOutputCollection(batch_size, event.queue());
 
   InputMetadata input_metadata(Float, 3);
-  OutputMetadata output_metadata(Float, 1);
+  OutputMetadata output_metadata(Float, 2);
   ModelMetadata model_metadata(batch_size, input_metadata, output_metadata);
 
   if (tools::device(event.queue()) != globalCache()->device()) 
     globalCache()->to(event.queue());
   std::cout << "(Classifier) model=" << globalCache()->device() << std::endl;  
-  // assert(tools::device(event.queue()) == globalCache()->device());  
-  // globalCache()->forward<SimpleInputSoA, SimpleOutputSoA>(
-  //   model_metadata, inputs_tmp.buffer().data(), outputs.buffer().data());
+  assert(tools::device(event.queue()) == globalCache()->device());  
+  globalCache()->forward<SimpleInputSoA, SimpleOutputSoA>(
+    model_metadata, inputs_tmp.buffer().data(), outputs.buffer().data());
 
   event.emplace(outputs_token_, std::move(outputs));
 }

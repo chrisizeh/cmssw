@@ -44,7 +44,7 @@ args.register(
 
 args.register(
     "classificationModelPath",
-    "PhysicsTools/PyTorchAlpakaTest/models/classification_model.pt",
+    "PhysicsTools/PyTorchAlpakaTest/models/linear_dnn.pt",
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.string,         
     "Classification model"
