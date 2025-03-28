@@ -65,6 +65,7 @@ struct InputMetadataElement : MetadataElement {
 
 // Wrapper of generic element for output SOA, with only one block per SOA
 struct OutputMetadata : MetadataElement {
+  OutputMetadata() : MetadataElement({}, Columns(0)) {}
   OutputMetadata(torch::ScalarType type_, int columns_) : MetadataElement(type_, Columns(columns_)) {}
   OutputMetadata(torch::ScalarType type_, const Columns& columns_) : MetadataElement(type_, columns_) {}
 };
@@ -81,6 +82,8 @@ public:
   std::vector<int> order;
   int nBlocks;
   int nTensors;
+
+  InputMetadata() : nBlocks(0), nTensors(0) {}
 
   // Constructor, if all blocks should be converted in initial ordering.
   InputMetadata(const std::vector<torch::ScalarType>& types, const std::vector<Columns>& columns) {
