@@ -1,12 +1,17 @@
 <lcgdict>
-  <!-- Input -->
-  <class name="alpaka_rocm_async::PortableCollection<SimpleInputSoA>" persistent="false"/>
-  <class name="alpaka_rocm_async::SimpleInputCollection" persistent="false"/>
-  <class name="edm::DeviceProduct<alpaka_rocm_async::SimpleInputCollection>" persistent="false"/>
-  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_rocm_async::SimpleInputCollection>>" persistent="false"/>
-  <!-- Output -->
-  <class name="alpaka_rocm_async::PortableCollection<SimpleOutputSoA>" persistent="false"/>
-  <class name="alpaka_rocm_async::SimpleOutputCollection" persistent="false"/>
-  <class name="edm::DeviceProduct<alpaka_rocm_async::SimpleOutputCollection>" persistent="false"/>
-  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_rocm_async::SimpleOutputCollection>>" persistent="false"/>
+  <!-- Particle -->
+  <class name="alpaka_rocm_async::PortableCollection<ParticleSoA>" persistent="false"/>
+  <class name="alpaka_rocm_async::ParticleCollection" persistent="false"/>
+  <class name="edm::DeviceProduct<alpaka_rocm_async::ParticleCollection>" persistent="false"/>
+  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_rocm_async::ParticleCollection>>" persistent="false"/>
+  <!-- Classification -->
+  <class name="alpaka_rocm_async::PortableCollection<ClassificationSoA>" persistent="false"/>
+  <class name="alpaka_rocm_async::ClassificationCollection" persistent="false"/>
+  <class name="edm::DeviceProduct<alpaka_rocm_async::ClassificationCollection>" persistent="false"/>
+  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_rocm_async::ClassificationCollection>>" persistent="false"/>
+  <!-- Regression -->
+  <class name="alpaka_rocm_async::PortableCollection<RegressionSoA>" persistent="false"/>
+  <class name="alpaka_rocm_async::RegressionCollection" persistent="false"/>
+  <class name="edm::DeviceProduct<alpaka_rocm_async::RegressionCollection>" persistent="false"/>
+  <class name="edm::Wrapper<edm::DeviceProduct<alpaka_rocm_async::RegressionCollection>>" persistent="false"/>
 </lcgdict>

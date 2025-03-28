@@ -1,14 +1,20 @@
 <lcgdict>
-  <!-- Input -->
-  <class name="SimpleInputSoA"/>
-  <class name="SimpleInputSoA::View"/>
-  <class name="SimpleInputSoA::ConstView"/>
-  <class name="SimpleInputCollectionHost"/>
-  <class name="edm::Wrapper<SimpleInputCollectionHost>" splitLevel="0"/>
-  <!-- Output -->
-  <class name="SimpleOutputSoA"/>
-  <class name="SimpleOutputSoA::View"/>
-  <class name="SimpleOutputSoA::ConstView"/>
-  <class name="SimpleOutputCollectionHost"/>
-  <class name="edm::Wrapper<SimpleOutputCollectionHost>" splitLevel="0"/>
+  <!-- Particle -->
+  <class name="ParticleSoA"/>
+  <class name="ParticleSoA::View"/>
+  <class name="ParticleSoA::ConstView"/>
+  <class name="ParticleCollectionHost"/>
+  <class name="edm::Wrapper<ParticleCollectionHost>" splitLevel="0"/>
+  <!-- Classification -->
+  <class name="ClassificationSoA"/>
+  <class name="ClassificationSoA::View"/>
+  <class name="ClassificationSoA::ConstView"/>
+  <class name="ClassificationCollectionHost"/>
+  <class name="edm::Wrapper<ClassificationCollectionHost>" splitLevel="0"/>
+  <!-- Regression -->
+  <class name="RegressionSoA"/>
+  <class name="RegressionSoA::View"/>
+  <class name="RegressionSoA::ConstView"/>
+  <class name="RegressionCollectionHost"/>
+  <class name="edm::Wrapper<RegressionCollectionHost>" splitLevel="0"/>
 </lcgdict>

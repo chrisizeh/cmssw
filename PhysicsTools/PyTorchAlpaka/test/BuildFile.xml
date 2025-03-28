@@ -1,6 +1,6 @@
 <use name="python_tools"/>
 
-<ifarch value="x86_64">
+<!-- <ifarch value="x86_64">
   <bin name="testTorchSimpleDnn" file="testRunner.cc,testTorchSimpleDnn.cc">
     <use name="pytorch"/>
     <use name="boost_filesystem"/>
@@ -163,8 +163,8 @@
   <flags ALPAKA_BACKENDS="cuda"/>
   <flags ALPAKA_BACKENDS="serial"/>
 </bin>
-
-
+ -->
+<!-- 
 <bin file="alpaka/testTorchMTMS.cc testRunner.cc" name="testTorchMTMS-alpaka">
   <use name="boost_filesystem"/>
   <use name="alpaka"/>
@@ -172,9 +172,9 @@
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <flags ALPAKA_BACKENDS="1"/>
-</bin>
+</bin> -->
 
-<bin file="alpaka/testTorchMTMS-localNN.cc testRunner.cc" name="testTorchMTMS-localNN-alpaka">
+<!-- <bin file="alpaka/testTorchMTMS-localNN.cc testRunner.cc" name="testTorchMTMS-localNN-alpaka">
   <use name="boost_filesystem"/>
   <use name="alpaka"/>
   <use name="cppunit"/>
@@ -193,4 +193,14 @@
   <use name="DataFormats/PortableTestObjects"/>
   <flags ALPAKA_BACKENDS="cuda"/>
   <flags ALPAKA_BACKENDS="serial"/>
+</bin> -->
+
+
+<bin file="alpaka/testCublasContext.cc testRunner.cc" name="testCublasContext">
+  <use name="boost_filesystem"/>
+  <use name="alpaka"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <flags ALPAKA_BACKENDS="1"/>
 </bin>

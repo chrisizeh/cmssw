@@ -12,21 +12,28 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-using SimpleInputCollection =
+using ParticleCollection =
     std::conditional_t<
         std::is_same_v<Device, alpaka::DevCpu>, 
-        SimpleInputCollectionHost, 
-        SimpleInputCollectionDevice<Device>>;
+        ParticleCollectionHost, 
+        ParticleCollectionDevice<Device>>;
 
-using SimpleOutputCollection =
+using ClassificationCollection =
     std::conditional_t<
         std::is_same_v<Device, alpaka::DevCpu>, 
-        SimpleOutputCollectionHost, 
-        SimpleOutputCollectionDevice<Device>>;
+        ClassificationCollectionHost, 
+        ClassificationCollectionDevice<Device>>;
+
+using RegressionCollection =
+    std::conditional_t<
+        std::is_same_v<Device, alpaka::DevCpu>, 
+        RegressionCollectionHost, 
+        RegressionCollectionDevice<Device>>;
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-ASSERT_DEVICE_MATCHES_HOST_COLLECTION(SimpleInputCollection, SimpleInputCollectionHost);
-ASSERT_DEVICE_MATCHES_HOST_COLLECTION(SimpleOutputCollection, SimpleOutputCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(ParticleCollection, ParticleCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(ClassificationCollection, ClassificationCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(RegressionCollection, RegressionCollectionHost);
 
 #endif  // DATA_FORMATS__PYTORCH_ALPAKA_TEST__INTERFACE__ALPAKA__COLLECTIONS_H_

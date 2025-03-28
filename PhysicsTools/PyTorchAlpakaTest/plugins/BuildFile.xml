@@ -1,5 +1,9 @@
 <library file="alpaka/*.cc" name="PhysicsToolsPyTorchAlpakaTestPlugins">
   <use name="alpaka"/>
+  <use name="boost_filesystem"/>
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
   <use name="DataFormats/PyTorchAlpakaTest"/>
   <use name="FWCore/Framework"/>
   <use name="FWCore/ParameterSet"/>

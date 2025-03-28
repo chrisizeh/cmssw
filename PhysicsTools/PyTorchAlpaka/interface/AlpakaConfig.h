@@ -46,6 +46,17 @@ inline torch::jit::script::Module load(const std::string &model_path) {
     throw std::runtime_error("Error loading the model: " + std::string(e.what()));
   }
 }
+
+inline int64_t queue_hash(const ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+  thread_local auto stream = c10::cuda::getStreamFromExternal(
+    queue.getNativeHandle(), device(queue).index());
+  return stream.id();
+#elif ALPAKA_ACC_GPU_HIP_ENABLED
+  return 0;
+#endif
+  return std::hash<std::thread::id>{}(std::this_thread::get_id());
+}
      
 }  // namespace torch_alpaka::tools
 
@@ -70,12 +81,12 @@ inline void reset_guard();
 template <>
 inline void set_guard(const alpaka_cuda_async::Queue &queue) {
   const auto dev = tools::device(queue);
-  const auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), dev.index());
+  thread_local auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), dev.index());
   c10::cuda::setCurrentCUDAStream(stream);
 }
 
 inline void reset_guard() {
-  c10::cuda::setCurrentCUDAStream(c10::cuda::getDefaultCUDAStream());
+  // c10::cuda::setCurrentCUDAStream(c10::cuda::getDefaultCUDAStream());
 }
 
 #elif ALPAKA_ACC_GPU_HIP_ENABLED

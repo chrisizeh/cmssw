@@ -4,7 +4,7 @@ args = VarParsing.VarParsing("analysis")
 
 args.register(
     "numberOfThreads",
-    1,
+    8,
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,
     "Number of CMSSW threads"
@@ -20,7 +20,7 @@ args.register(
 
 args.register(
     "numberOfEvents",
-    1,
+    2,
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,
     "Number of events to process"
@@ -44,15 +44,23 @@ args.register(
 
 args.register(
     "classificationModelPath",
-    "PhysicsTools/PyTorchAlpakaTest/models/linear_dnn.pt",
+    "PhysicsTools/PyTorchAlpakaTest/models/classification.pt",
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.string,         
     "Classification model"
 )
 
 args.register(
+    "regressionModelPath",
+    "PhysicsTools/PyTorchAlpakaTest/models/regression.pt",
+    VarParsing.VarParsing.multiplicity.singleton,
+    VarParsing.VarParsing.varType.string,         
+    "Regression model"
+)
+
+args.register(
     "numberOfClasses",
-    10,
+    2,
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,         
     "Classification model number of classes"

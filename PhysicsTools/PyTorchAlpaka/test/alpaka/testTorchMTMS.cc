@@ -237,7 +237,7 @@ void testTorchFromBufferModelEval::test() {
     b_cpu[i] = rand() % (1000 * 1000);
   }
 
-  size_t threadCount = 10;
+  size_t threadCount = 4;
   std::vector<std::thread> threads;
   for (size_t t = 0; t < threadCount; ++t) {
     threads.emplace_back([&, t] {

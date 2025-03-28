@@ -23,9 +23,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
 using namespace torch_alpaka;  
 
-class Classifier : public stream::EDProducer<edm::GlobalCache<Model>> {
+class Regression : public stream::EDProducer<edm::GlobalCache<Model>> {
  public:
-  Classifier(const edm::ParameterSet &params, const Model *cache);
+  Regression(const edm::ParameterSet &params, const Model *cache);
 
   static std::unique_ptr<Model> initializeGlobalCache(const edm::ParameterSet &params);
   static void globalEndJob(const Model *cache);
@@ -35,8 +35,7 @@ class Classifier : public stream::EDProducer<edm::GlobalCache<Model>> {
 
  private:  
   const device::EDGetToken<ParticleCollection> inputs_token_;
-  const device::EDPutToken<ClassificationCollection> outputs_token_;
-  const uint32_t number_of_classes_;
+  const device::EDPutToken<RegressionCollection> outputs_token_;
   const std::string backend_;
 };
 

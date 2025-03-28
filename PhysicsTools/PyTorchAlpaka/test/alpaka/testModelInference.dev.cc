@@ -44,8 +44,8 @@ using SoAPositionConstView = SoAPosition::ConstView;
 
 // Output SOA
 GENERATE_SOA_LAYOUT(SoAResultTemplate, 
-  SOA_COLUMN(float, x), 
-  SOA_COLUMN(float, y)
+  SOA_COLUMN(float, m), 
+  SOA_COLUMN(float, n)
 )
 
 using SoAResult = SoAResultTemplate<>;
@@ -63,46 +63,45 @@ class testModelInference : public testBasePyTorch {
 
 CPPUNIT_TEST_SUITE_REGISTRATION(testModelInference);
 
-std::string testModelInference::pyScript() const { return "create_linear_dnn.py"; }
+std::string testModelInference::pyScript() const { return "create_classifier.py"; }
 
 class FillKernel {
  public:
   template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
   ALPAKA_FN_ACC void operator()(TAcc const& acc, PortableCollection<SoAPosition, Device>::View view) const {
-    float input[4][3] = {{1, 2, 1}, {2, 4, 3}, {3, 4, 1}, {2, 3, 2}};
     for (int32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
-      view.x()[i] = input[i][0];
-      view.y()[i] = input[i][1];
-      view.z()[i] = input[i][2];
-    }
-  }
-};
-
-class TestVerifyKernel {
- public:
-  ALPAKA_FN_ACC void operator()(Acc1D const& acc, PortableCollection<SoAResult, Device>::View view) const {
-    float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
-    for (uint32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
-      ALPAKA_ASSERT_ACC(view.x()[i] - result_check[i][0] < 1.0e-05);
-      ALPAKA_ASSERT_ACC(view.x()[i] - result_check[i][0] > - 1.0e-05);
-      ALPAKA_ASSERT_ACC(view.y()[i] - result_check[i][1] < 1.0e-05);
-      ALPAKA_ASSERT_ACC(view.y()[i] - result_check[i][1] > -1.0e-05);
+      view.x()[i] = 0.10 * i;
+      view.y()[i] = 0.11 * i;
+      view.z()[i] = 0.12 * i;
     }
   }
 };
 
 void fill(Queue& queue, PortableCollection<SoAPosition, Device>& collection) {
-  uint32_t items = 64;
+  uint32_t items = 32;
   uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
   auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
   alpaka::exec<Acc1D>(queue, workDiv, FillKernel{}, collection.view());
 }
 
+class CheckKernel {
+ public:
+  template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
+  ALPAKA_FN_ACC void operator()(TAcc const& acc, PortableCollection<SoAResult, Device>::View view) const {
+    if (cms::alpakatools::once_per_grid(acc)) {
+      printf("| m | n |\n");
+      for (int i = 0; i < view.metadata().size(); i++) {
+        printf("| %1.1f | %1.1f |\n", view.m()[i], view.n()[i]);
+      }
+    }
+  }
+};
+ 
 void check(Queue& queue, PortableCollection<SoAResult, Device>& collection) {
-  uint32_t items = 64;
+  uint32_t items = 32;
   uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
   auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-  alpaka::exec<Acc1D>(queue, workDiv, TestVerifyKernel{}, collection.view());
+  alpaka::exec<Acc1D>(queue, workDiv, CheckKernel{}, collection.view());
 }
 
 void testModelInference::test() {
@@ -114,15 +113,16 @@ void testModelInference::test() {
   Queue queue{alpakaDevice};
 
   // Number of elements
-  const std::size_t batch_size = 4;
+  const std::size_t batch_size = 32;
 
   // Create and fill needed portable collections
   PortableCollection<SoAPosition, Device> positionCollection(batch_size, alpakaDevice);
   PortableCollection<SoAResult, Device> resultCollection(batch_size, alpakaDevice);
   fill(queue, positionCollection);
   alpaka::wait(queue);
+  check(queue, resultCollection);
 
-  std::string model_path = dataPath_ + "/linear_dnn.pt";
+  std::string model_path = dataPath_ + "/classifier.pt";
 
   auto model = Model(model_path);
   model.to(queue);

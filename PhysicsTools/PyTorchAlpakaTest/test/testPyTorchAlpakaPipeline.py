@@ -27,6 +27,7 @@ process.options.wantSummary = False
 # load pipeline chain
 process.load("PhysicsTools.PyTorchAlpakaTest.data_loader")
 process.load("PhysicsTools.PyTorchAlpakaTest.classifier")
+process.load("PhysicsTools.PyTorchAlpakaTest.regression")
 
 # setup chain configs
 process.DataLoader = process.DataLoaderStruct.clone(
@@ -39,6 +40,15 @@ process.Classifier = process.ClassifierStruct.clone(
     inputs = cms.InputTag('DataLoader'),
     classificationModelPath = cms.FileInPath(args.classificationModelPath),
     numberOfClasses = cms.uint32(args.numberOfClasses),
+    backend = args.backend,
+    alpaka = cms.untracked.PSet(
+        backend = cms.untracked.string(args.backend)
+    ),
+)
+process.Regression = process.RegressionStruct.clone(
+    inputs = cms.InputTag('DataLoader'),
+    regressionModelPath = cms.FileInPath(args.regressionModelPath),
+    backend = args.backend,
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string(args.backend)
     ),
@@ -47,7 +57,8 @@ process.Classifier = process.ClassifierStruct.clone(
 # schedule the modules
 process.path = cms.Path(
     process.DataLoader + 
-    process.Classifier
+    process.Classifier + 
+    process.Regression
 )
 
 process.schedule = cms.Schedule(

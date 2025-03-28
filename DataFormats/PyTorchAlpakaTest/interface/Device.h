@@ -5,9 +5,12 @@
 #include "DataFormats/PyTorchAlpakaTest/interface/Layout.h"
 
 template <typename TDev>
-using SimpleInputCollectionDevice = PortableDeviceCollection<SimpleInputSoA, TDev>;
+using ParticleCollectionDevice = PortableDeviceCollection<ParticleSoA, TDev>;
 
 template <typename TDev>
-using SimpleOutputCollectionDevice = PortableDeviceCollection<SimpleOutputSoA, TDev>;
+using ClassificationCollectionDevice = PortableDeviceCollection<ClassificationSoA, TDev>;
+
+template <typename TDev>
+using RegressionCollectionDevice = PortableDeviceCollection<RegressionSoA, TDev>;
 
 #endif  // DATA_FORMATS__PYTORCH_ALPAKA_TEST__INTERFACE__DEVICE_H_

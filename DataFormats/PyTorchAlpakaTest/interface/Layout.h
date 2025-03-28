@@ -5,18 +5,23 @@
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
 #include "DataFormats/SoATemplate/interface/SoAView.h"
 
-GENERATE_SOA_LAYOUT(SimpleInLayout,
-  SOA_COLUMN(float, x),
-  SOA_COLUMN(float, y),
-  SOA_COLUMN(float, z)
+GENERATE_SOA_LAYOUT(ParticleLayout,
+  SOA_COLUMN(float, pt),
+  SOA_COLUMN(float, eta),
+  SOA_COLUMN(float, phi)
 )
-using SimpleInputSoA = SimpleInLayout<>;
+using ParticleSoA = ParticleLayout<>;
 
 
-GENERATE_SOA_LAYOUT(SimpleOutLayout,
-  SOA_COLUMN(float, correct_prob),
-  SOA_COLUMN(float, not_correct_prob)
+GENERATE_SOA_LAYOUT(ClassificationLayout,
+  SOA_COLUMN(float, c1),
+  SOA_COLUMN(float, c2)
 )
-using SimpleOutputSoA = SimpleOutLayout<>;
+using ClassificationSoA = ClassificationLayout<>;
+
+GENERATE_SOA_LAYOUT(RegressionLayout,
+  SOA_COLUMN(float, reco_pt)
+)
+using RegressionSoA = RegressionLayout<>;
 
 #endif  // DATA_FORMATS__PYTORCH_ALPAKA_TEST__INTERFACE__LAYOUT_H_
