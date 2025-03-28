@@ -24,6 +24,9 @@ void Classifier::globalEndJob(const Model *cache) {}
 void Classifier::produce(device::Event &event, const device::EventSetup &event_setup) {
   std::cout << "(Classifier) hash=" << tools::queue_hash(event.queue()) << std::endl;
   set_guard(event.queue());
+  // TODO: const remove should not be done by user
+  // in principle should not be done by anyone
+  // @see: torch::from_blob(void*) 
   auto& inputs =  const_cast<ParticleCollection&>(event.get(inputs_token_));;
   const size_t batch_size = inputs.const_view().metadata().size();
   auto outputs = ClassificationCollection(batch_size, event.queue());

@@ -3,7 +3,6 @@
 <use name="cppunit"/>
 <use name="pytorch"/>
 <use name="pytorch-cuda"/>
-<use name="cublas"/>
 <use name="DataFormats/PyTorchAlpakaTest"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/MessageLogger"/>
