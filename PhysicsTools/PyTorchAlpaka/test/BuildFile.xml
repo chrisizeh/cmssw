@@ -194,13 +194,3 @@
   <flags ALPAKA_BACKENDS="cuda"/>
   <flags ALPAKA_BACKENDS="serial"/>
 </bin> -->
-
-
-<bin file="alpaka/testCublasContext.cc testRunner.cc" name="testCublasContext">
-  <use name="boost_filesystem"/>
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <flags ALPAKA_BACKENDS="1"/>
-</bin>

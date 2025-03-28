@@ -5,6 +5,7 @@
 <use name="HeterogeneousCore/AlpakaInterface"/>
 <use name="pytorch"/>
 <use name="pytorch-cuda"/>
+<use name="cublas"/>
 <export>
   <lib name="1"/>
 </export>

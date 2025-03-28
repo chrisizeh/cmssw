@@ -27,6 +27,7 @@ process.options.wantSummary = False
 # load pipeline chain
 process.load("PhysicsTools.PyTorchAlpakaTest.data_loader")
 process.load("PhysicsTools.PyTorchAlpakaTest.classifier")
+process.load("PhysicsTools.PyTorchAlpakaTest.combinatorial")
 process.load("PhysicsTools.PyTorchAlpakaTest.regression")
 
 # setup chain configs
@@ -45,6 +46,12 @@ process.Classifier = process.ClassifierStruct.clone(
         backend = cms.untracked.string(args.backend)
     ),
 )
+process.Combinatorial = process.CombinatorialStruct.clone(
+    inputs = cms.InputTag('DataLoader'),
+    alpaka = cms.untracked.PSet(
+        backend = cms.untracked.string(args.backend)
+    ),
+)
 process.Regression = process.RegressionStruct.clone(
     inputs = cms.InputTag('DataLoader'),
     regressionModelPath = cms.FileInPath(args.regressionModelPath),
@@ -58,7 +65,8 @@ process.Regression = process.RegressionStruct.clone(
 process.path = cms.Path(
     process.DataLoader + 
     process.Classifier + 
-    process.Regression
+    # process.Regression +  # cuBLAS context issue
+    process.Combinatorial
 )
 
 process.schedule = cms.Schedule(

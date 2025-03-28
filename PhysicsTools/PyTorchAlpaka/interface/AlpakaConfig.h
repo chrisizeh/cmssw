@@ -80,13 +80,14 @@ inline void reset_guard();
 
 template <>
 inline void set_guard(const alpaka_cuda_async::Queue &queue) {
+  // TODO: fix cuBLAS context management
   const auto dev = tools::device(queue);
   thread_local auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), dev.index());
   c10::cuda::setCurrentCUDAStream(stream);
 }
 
 inline void reset_guard() {
-  // c10::cuda::setCurrentCUDAStream(c10::cuda::getDefaultCUDAStream());
+  c10::cuda::setCurrentCUDAStream(c10::cuda::getDefaultCUDAStream());
 }
 
 #elif ALPAKA_ACC_GPU_HIP_ENABLED
@@ -122,7 +123,7 @@ inline void set_guard(const alpaka_tbb_async::Queue &queue) {
 inline void reset_guard() {}
 
 #else
-#error "Could ."
+#error "Automatic backend detection failed."
 #endif
 
 template <typename TBuf>

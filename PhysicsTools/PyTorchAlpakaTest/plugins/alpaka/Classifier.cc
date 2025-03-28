@@ -22,11 +22,10 @@ std::unique_ptr<Model> Classifier::initializeGlobalCache(const edm::ParameterSet
 void Classifier::globalEndJob(const Model *cache) {}
 
 void Classifier::produce(device::Event &event, const device::EventSetup &event_setup) {
-  set_guard(event.queue());
   std::cout << "(Classifier) hash=" << tools::queue_hash(event.queue()) << std::endl;
-  const auto& inputs = event.get(inputs_token_);
+  set_guard(event.queue());
+  auto& inputs =  const_cast<ParticleCollection&>(event.get(inputs_token_));;
   const size_t batch_size = inputs.const_view().metadata().size();
-  auto inputs_tmp = ParticleCollection(batch_size, event.queue());
   auto outputs = ClassificationCollection(batch_size, event.queue());
 
   InputMetadata input_metadata(Float, 3);
@@ -38,10 +37,11 @@ void Classifier::produce(device::Event &event, const device::EventSetup &event_s
   std::cout << "(Classifier) model=" << globalCache()->device() << std::endl;  
   assert(tools::device(event.queue()) == globalCache()->device());  
   globalCache()->forward<ParticleSoA, ClassificationSoA>(
-    model_metadata, inputs_tmp.buffer().data(), outputs.buffer().data());
+    model_metadata, inputs.buffer().data(), outputs.buffer().data());
 
   event.emplace(outputs_token_, std::move(outputs));
   reset_guard();
+  std::cout << "(Classifier) OK" << std::endl; 
 }
 
 void Classifier::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
