@@ -23,6 +23,8 @@
 #include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
 #include "PhysicsTools/PyTorch/interface/Converter.h"
 
+#include "PhysicsTools/PyTorchAlpaka/interface/Converter.h"
+#include "PhysicsTools/PyTorchAlpaka/interface/AlpakaConfig.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
   
@@ -30,14 +32,16 @@ using namespace ::torch_alpaka;
 
 class testSOADataTypes : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testSOADataTypes);
-  CPPUNIT_TEST(test);
+  CPPUNIT_TEST(testInterfaceVerbose);
+    CPPUNIT_TEST(testInterfaceSlim);
   CPPUNIT_TEST(testSingleElement);
   CPPUNIT_TEST(testNoElement);
   CPPUNIT_TEST(testEmptyMetadata);
   CPPUNIT_TEST_SUITE_END();
 
  public:
-  void test();
+  void testInterfaceVerbose();
+    void testInterfaceSlim();
   void testSingleElement();
   void testNoElement();
   void testEmptyMetadata();
@@ -55,11 +59,11 @@ GENERATE_SOA_LAYOUT(SoATemplate,
   SOA_COLUMN(double, y),
   SOA_COLUMN(double, z),
 
-  SOA_COLUMN(double, v),
-  SOA_COLUMN(double, w),
-
+  SOA_SCALAR(float, type),
   SOA_SCALAR(int, someNumber),
-  SOA_SCALAR(float, type));
+
+  SOA_COLUMN(double, v),
+  SOA_COLUMN(double, w));
 
 using SoA = SoATemplate<>;
 using SoAView = SoA::View;
@@ -192,14 +196,14 @@ void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vecto
                       tensors[1].toTensor().packed_accessor64<float, 2>());
 }
 
-void testSOADataTypes::test() {
-  Platform platform;
-  std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-  const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
-  CPPUNIT_ASSERT(alpakaDevices.size());
-  const auto& alpakaDevice = alpakaDevices[0];
-  Queue queue{alpakaDevice};
-  torch::Device torchDevice(kDeviceType);
+  void testSOADataTypes::testInterfaceVerbose() {
+    Platform platform;
+    std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
+    const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
+    CPPUNIT_ASSERT(alpakaDevices.size());
+    const auto& alpakaDevice = alpakaDevices[0];
+    Queue queue{alpakaDevice};
+    torch::Device torchDevice(kDeviceType);
 
   // Large batch size, so multiple bunches needed
   const std::size_t batch_size = 325;
@@ -209,49 +213,51 @@ void testSOADataTypes::test() {
   fill(queue, deviceCollection);
   auto view = deviceCollection.view();
 
-  auto view = deviceCollection.view();
-  SoAMetadata input;
-  input.appendEigenBlock("vector", 2, view[0].a());
-  input.appendEigenBlock("matrix", 1, view[0].c());
-  input.appendBlock("matrix2", {{1, 2, 2}}, view.c());
-  input.appendBlock("normal", 3, view.x());
-  input.appendBlock("scalar", view.type());
-  input.changeOrder({"normal", "scalar", "matrix", "vector", "matrix2"});
+    auto view = deviceCollection.view();
+    SoAMetadata<SoA> input;
+    input.append_eigen_block("vector", 2, view[0].a());
+    input.append_eigen_block("matrix", 1, view[0].c());
+    input.append_block("matrix2", {{1, 2, 2}}, view.c());
+    input.append_block("normal", 3, view.x());
+    input.append_block("scalar", view.type());
+    input.change_order({"normal", "scalar", "matrix", "vector", "matrix2"});
 
-  SoAMetadata output;
-  output.appendBlock("result", 2, view.v());
-  ModelMetadata metadata(batch_size, input, output);
+    SoAMetadata<SoA> output;
+    output.append_block("result", 2, view.v());
+    ModelMetadata metadata(batch_size, input, output);
 
-  alpaka::wait(queue);
-  std::vector<torch::IValue> tensors =
-      Converter<SoA>::convert_input(metadata, torchDevice);
+    alpaka::wait(queue);
+    std::vector<torch::IValue> tensors =
+        Converter::convert_input(metadata, torchDevice);
 
-  // Check if tensor list built correctly
-  check(queue, deviceCollection, tensors);
-};
+    // Check if tensor list built correctly
+    check(queue, deviceCollection, tensors);
+  };
 
-void testSOADataTypes::testSingleElement() {
-  Platform platform;
-  std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-  CPPUNIT_ASSERT(alpakaDevices.size());
-  const auto& alpakaDevice = alpakaDevices[0];
-  Queue queue(alpakaDevice);
-  torch::Device torchDevice(kTorchDeviceType);
+  void testSOADataTypes::testInterfaceSlim() {
+    Platform platform;
+    std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
+    const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
+    CPPUNIT_ASSERT(alpakaDevices.size());
+    const auto& alpakaDevice = alpakaDevices[0];
+    Queue queue{alpakaDevice};
+    torch::Device torchDevice(kDeviceType);
 
+    // Large batch size, so multiple bunches needed
+    const std::size_t batch_size = 2;
 
-  // Create and fill portable collections
-  const std::size_t batch_size = 1;
-  PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
-  fill(queue, deviceCollection);
+    // Create and fill needed portable collections
+    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
+    fill(queue, deviceCollection);
+    auto view = deviceCollection.view();
 
-  // Run Converter for single tensor
-  InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
-  OutputMetadata output(Double, 3);
-  ModelMetadata metadata(batch_size, input, output);
+    SoAMetadata<SoA> input(deviceCollection.buffer().data(), {Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
+    SoAMetadata<SoA> output(view.v(), Double, 2);
+    ModelMetadata metadata(batch_size, input, output);
 
-  alpaka::wait(queue);
-  std::vector<torch::IValue> tensors =
-      Converter<SoA>::convert_input(metadata, torchDevice, deviceCollection.buffer().data());
+    alpaka::wait(queue);
+    std::vector<torch::IValue> tensors =
+        Converter::convert_input(metadata, torchDevice);
 
   // Check if tensor list built correctly
   check(queue, deviceCollection, tensors);

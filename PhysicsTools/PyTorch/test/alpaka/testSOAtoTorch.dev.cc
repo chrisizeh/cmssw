@@ -23,6 +23,8 @@
 #include "PhysicsTools/PyTorch/interface/Converter.h"
 #include "PhysicsTools/PyTorch/test/testBase.h"
 
+#include "PhysicsTools/PyTorchAlpaka/interface/AlpakaConfig.h"
+#include "PhysicsTools/PyTorchAlpaka/interface/Converter.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
 
@@ -57,10 +59,10 @@ using namespace ::torch_alpaka;
 
   // Build Tensor, run model and fill output pointer with result
   template <typename SOA_Input, typename SOA_Output>
-  void run(torch::Device device, torch::jit::Module& model, const ModelMetadata& metadata) {
-    std::vector<torch::jit::IValue> input_tensor = Converter<SOA_Input>::convert_input(metadata, device);
+  void run(torch::Device device, torch::jit::Module& model, const ModelMetadata<SOA_Input, SOA_Output>& metadata) {
+    std::vector<torch::jit::IValue> input_tensor = Converter::convert_input(metadata, device);
 
-    Converter<SOA_Output>::convert_output(metadata, device) = model.forward(input_tensor).toTensor();
+    Converter::convert_output(metadata, device) = model.forward(input_tensor).toTensor();
   }
 
   class FillKernel {
@@ -134,13 +136,13 @@ using namespace ::torch_alpaka;
     }
 
     // Create SoA Metadata
-    SoAMetadata input;
+    SoAMetadata<SoAPosition> input;
     auto posview = positionCollection.view();
-    input.appendBlock("main", 3, posview.x());
+    input.append_block("main", 3, posview.x());
 
-    SoAMetadata output;
+    SoAMetadata<SoAResult> output;
     auto view = resultCollection.view();
-    output.appendBlock("result", 2, view.x());
+    output.append_block("result", 2, view.x());
     ModelMetadata metadata(batch_size, input, output);
 
     ModelMetadata mask(batch_size, input, output);
