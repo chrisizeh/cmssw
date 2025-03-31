@@ -214,7 +214,7 @@ void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vecto
   auto view = deviceCollection.view();
 
     auto view = deviceCollection.view();
-    SoAMetadata<SoA> input;
+    SoAMetadata<SoA> input(batch_size);
     input.append_eigen_block("vector", 2, view[0].a());
     input.append_eigen_block("matrix", 1, view[0].c());
     input.append_block("matrix2", {{1, 2, 2}}, view.c());
@@ -222,9 +222,9 @@ void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vecto
     input.append_block("scalar", view.type());
     input.change_order({"normal", "scalar", "matrix", "vector", "matrix2"});
 
-    SoAMetadata<SoA> output;
+    SoAMetadata<SoA> output(batch_size);
     output.append_block("result", 2, view.v());
-    ModelMetadata metadata(batch_size, input, output);
+    ModelMetadata metadata(input, output);
 
     alpaka::wait(queue);
     std::vector<torch::IValue> tensors =
@@ -251,9 +251,9 @@ void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vecto
     fill(queue, deviceCollection);
     auto view = deviceCollection.view();
 
-    SoAMetadata<SoA> input(deviceCollection.buffer().data(), {Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
-    SoAMetadata<SoA> output(view.v(), Double, 2);
-    ModelMetadata metadata(batch_size, input, output);
+    SoAMetadata<SoA> input(batch_size, deviceCollection.buffer().data(), {Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
+    SoAMetadata<SoA> output(batch_size, view.v(), Double, 2);
+    ModelMetadata metadata(input, output);
 
     alpaka::wait(queue);
     std::vector<torch::IValue> tensors =

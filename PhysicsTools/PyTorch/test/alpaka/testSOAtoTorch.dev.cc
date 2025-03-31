@@ -136,19 +136,17 @@ using namespace ::torch_alpaka;
     }
 
     // Create SoA Metadata
-    SoAMetadata<SoAPosition> input;
+    SoAMetadata<SoAPosition> input(batch_size);
     auto posview = positionCollection.view();
     input.append_block("main", 3, posview.x());
 
-    SoAMetadata<SoAResult> output;
+    SoAMetadata<SoAResult> output(batch_size);
     auto view = resultCollection.view();
     output.append_block("result", 2, view.x());
-    ModelMetadata metadata(batch_size, input, output);
-
-    ModelMetadata mask(batch_size, input, output);
+    ModelMetadata metadata(input, output);
 
     // Call function to build tensor and run model
-    run<SoAPosition, SoAResult>(torchDevice, model, mask);
+    run(torchDevice, model, metadata);
     alpaka::wait(queue);
 
     check(queue, resultCollection);
