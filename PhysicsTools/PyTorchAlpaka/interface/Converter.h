@@ -39,6 +39,17 @@ namespace torch_alpaka {
       return Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[0]]);
     }
 
+    // Calculate size and stride of data store based on OutputMetadata and fill SoA with tensor values
+    template <typename SOA_Input, typename SOA_Output>
+    static void convert_output(const std::vector<torch::IValue> tensors,
+                                        const ModelMetadata<SOA_Input, SOA_Output>& metadata,
+                                        torch::Device device) {
+      for (int i = 0; i < metadata.output.nBlocks; i++) {
+        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr) % SOA_Output::alignment == 0);
+        std::move(Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[i]])) = tensors.at(i).toTensor();
+      }
+    }
+
   private:
     // Wrap raw pointer by torch::Tensor based on type, size and stride.
     template <typename SOA_Layout>
