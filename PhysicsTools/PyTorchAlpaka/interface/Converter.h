@@ -24,10 +24,6 @@ namespace torch_alpaka {
     static std::vector<torch::IValue> convert_input(const ModelMetadata<SOA_Input, SOA_Output>& metadata,
                                                     torch::Device device) {
       std::vector<torch::IValue> tensors(metadata.input.nBlocks);
-
-      // Initialize size and stride vector with default dimension for scalar block
-      torch::Tensor tensor;
-
       for (int i = 0; i < metadata.input.nBlocks; i++) {
         assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr) % SOA_Input::alignment == 0);
         tensors.at(i) =
@@ -46,7 +42,7 @@ namespace torch_alpaka {
   private:
     // Wrap raw pointer by torch::Tensor based on type, size and stride.
     template <typename SOA_Layout>
-    static torch::Tensor array_to_tensor(torch::Device device, Block<SOA_Layout> block) {
+    static torch::Tensor array_to_tensor(torch::Device device, const Block<SOA_Layout>& block) {
       auto options = torch::TensorOptions().dtype(block.type).device(device).pinned_memory(true);
       return torch::from_blob(block.ptr, block.size, block.stride, options);
     }

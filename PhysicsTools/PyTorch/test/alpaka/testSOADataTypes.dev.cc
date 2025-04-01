@@ -182,19 +182,33 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
   alpaka::exec<Acc1D>(queue, workDiv, InputVerifyKernel{}, collection.view());
 }
 
-void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vector<torch::IValue> tensors) {
-  uint32_t items = 64;
-  uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
-  auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
-  alpaka::exec<Acc1D>(queue,
-                      workDiv,
-                      TestVerifyKernel{},
-                      collection.view(),
-                      tensors[3].toTensor().packed_accessor64<double, 3>(),
-                      tensors[2].toTensor().packed_accessor64<float, 4>(),
-                      tensors[0].toTensor().packed_accessor64<double, 2>(),
-                      tensors[1].toTensor().packed_accessor64<float, 2>());
-}
+  void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vector<torch::IValue> tensors) {
+    uint32_t items = 64;
+    uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
+    auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
+    alpaka::exec<Acc1D>(queue,
+                        workDiv,
+                        TestVerifyKernel{},
+                        collection.view(),
+                        tensors[3].toTensor().packed_accessor64<double, 3>(),
+                        tensors[2].toTensor().packed_accessor64<float, 4>(),
+                        tensors[0].toTensor().packed_accessor64<double, 2>(),
+                        tensors[1].toTensor().packed_accessor64<float, 2>());
+  }
+
+  void check_not_ordered(Queue& queue, PortableCollection<SoA, Device>& collection, std::vector<torch::IValue> tensors) {
+    uint32_t items = 64;
+    uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
+    auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
+    alpaka::exec<Acc1D>(queue,
+                        workDiv,
+                        TestVerifyKernel{},
+                        collection.view(),
+                        tensors[0].toTensor().packed_accessor64<double, 3>(),
+                        tensors[1].toTensor().packed_accessor64<float, 4>(),
+                        tensors[2].toTensor().packed_accessor64<double, 2>(),
+                        tensors[3].toTensor().packed_accessor64<float, 2>());
+  }
 
   void testSOADataTypes::testInterfaceVerbose() {
     Platform platform;
@@ -227,8 +241,7 @@ void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vecto
     ModelMetadata metadata(input, output);
 
     alpaka::wait(queue);
-    std::vector<torch::IValue> tensors =
-        Converter::convert_input(metadata, torchDevice);
+    std::vector<torch::IValue> tensors = Converter::convert_input(metadata, torchDevice);
 
     // Check if tensor list built correctly
     check(queue, deviceCollection, tensors);
@@ -248,19 +261,35 @@ void check(Queue& queue, PortableCollection<SoA, Device>& collection, std::vecto
 
     // Create and fill needed portable collections
     PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
-    fill(queue, deviceCollection);
     auto view = deviceCollection.view();
 
-    SoAMetadata<SoA> input(batch_size, deviceCollection.buffer().data(), {Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
+    // Short way of initializeing metadata
+    SoAMetadata<SoA> input(batch_size,
+                           deviceCollection.buffer().data(),
+                           {Double, Float, Double, Float, Int},
+                           {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0},
+                           {3, 2, 0, 1, -1});
     SoAMetadata<SoA> output(batch_size, view.v(), Double, 2);
     ModelMetadata metadata(input, output);
 
+    // Fill after definition of metadata, without issues
+    fill(queue, deviceCollection);
     alpaka::wait(queue);
-    std::vector<torch::IValue> tensors =
-        Converter::convert_input(metadata, torchDevice);
+    std::vector<torch::IValue> tensors = Converter::convert_input(metadata, torchDevice);
 
   // Check if tensor list built correctly
   check(queue, deviceCollection, tensors);
+
+    input = SoAMetadata<SoA>(batch_size,
+          deviceCollection.buffer().data(),
+          {Double, Float, Double, Float, Int},
+          {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
+    metadata = ModelMetadata(input, output);
+
+    tensors = Converter::convert_input(metadata, torchDevice);
+
+    // Check if tensor list built correctly
+    check_not_ordered(queue, deviceCollection, tensors);
 };
 
 void testSOADataTypes::testNoElement() {
