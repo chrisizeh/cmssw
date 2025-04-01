@@ -1,0 +1,15 @@
+<use name="alpaka"/>
+<use name="boost_filesystem"/>
+<use name="cppunit"/>
+<use name="pytorch"/>
+<use name="pytorch-cuda"/>
+<use name="DataFormats/PyTorchTest"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/MessageLogger"/>
+<use name="FWCore/Utilities"/>
+<use name="FWCore/ServiceRegistry"/>
+<use name="PhysicsTools/PyTorch"/>
+<flags ALPAKA_BACKENDS="1"/>
+<export>
+  <lib name="1"/>
+</export>

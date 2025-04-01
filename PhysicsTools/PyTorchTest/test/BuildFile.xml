@@ -1,0 +1,7 @@
+<test name="TestPyTorchTestPipelineCpu" command="testPyTorchPipeline.sh cpu"/>
+<test name="TestPyTorchTestPipelineCuda" command="testPyTorchPipeline.sh cuda">
+  <use name="cuda"/>
+</test>
+<test name="TestPyTorchTestPipelineROCm" command="testPyTorchPipeline.sh rocm">
+  <use name="rocm"/>
+</test>
