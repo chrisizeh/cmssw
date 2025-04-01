@@ -123,10 +123,10 @@ namespace torch_alpaka {
   public:
     // Order of resulting tensor list
     std::vector<std::string> order;
-    int nElements = 0;
-    int nBlocks = 0;
+    int nElements;
+    int nBlocks;
 
-    SoAMetadata(int nElements_) : nElements(nElements_) {}
+    SoAMetadata(int nElements_) : nElements(nElements_), nBlocks(0) {}
 
     // Constructor for defining blocks with custom order inline
     // Blocks can be masked by setting "-1" as the order position.
@@ -136,12 +136,9 @@ namespace torch_alpaka {
                 const std::vector<torch::ScalarType>& types,
                 const std::vector<Columns>& columns,
                 const std::vector<int>& order_)
-        : nElements(nElements_) {
+        : order(order_.size()), nElements(nElements_), nBlocks(0) {
       int N = std::min({types.size(), columns.size()});
-      nBlocks = 0;
       int skip = 0;
-
-      order.resize(order_.size());
 
       for (int i = 0; i < N; i++) {
         size_t bytes = torch::elementSize(types[i]);
@@ -169,21 +166,20 @@ namespace torch_alpaka {
     }
 
     SoAMetadata(int nElements_,
-      std::byte* ptr,
-      const std::vector<torch::ScalarType>& types,
-      const std::vector<Columns>& columns,
-      std::vector<int>&& order_) :  SoAMetadata(nElements_, ptr, types, columns, order_){}
+                std::byte* ptr,
+                const std::vector<torch::ScalarType>& types,
+                const std::vector<Columns>& columns,
+                std::vector<int>&& order_)
+        : SoAMetadata(nElements_, ptr, types, columns, order_) {}
 
     SoAMetadata(int nElements_,
-      std::byte* ptr,
-      const std::vector<torch::ScalarType>& types,
-      const std::vector<Columns>& columns)
-    : SoAMetadata(nElements_, ptr, types, columns, standard_order(types.size())) {}
+                std::byte* ptr,
+                const std::vector<torch::ScalarType>& types,
+                const std::vector<Columns>& columns)
+        : SoAMetadata(nElements_, ptr, types, columns, standard_order(types.size())) {}
 
     // Constructor for defining single block inline
-    SoAMetadata(int nElements, void* ptr, const torch::ScalarType types, const Columns& columns) {
-      nBlocks = 1;
-
+    SoAMetadata(int nElements_, void* ptr, const torch::ScalarType types, const Columns& columns) : nElements(nElements_), nBlocks(1) {
       size_t bytes = torch::elementSize(types);
       blocks.try_emplace("0", nElements, ptr, columns, types, bytes);
       order.push_back("0");
@@ -191,11 +187,11 @@ namespace torch_alpaka {
 
     // Append a block of eigen columns. The type is inferred by the matrix map.
     template <typename T, int rows, int cols>
-    requires (!std::is_pointer_v<T>)
-    void append_eigen_block(std::string name,
-                            const int columns,
-                            Eigen::Map<Eigen::Matrix<T, rows, cols>, 0, Eigen::InnerStride<>> ptr) {
-      void* p = &ptr(0, 0);
+      requires std::is_arithmetic_v<T>
+    void append_block(std::string name,
+                      int columns,
+                      Eigen::Map<Eigen::Matrix<T, rows, cols>, 0, Eigen::InnerStride<>> ptr) {
+      T* p = &ptr(0, 0);
       Columns col({columns, rows});
       if (cols > 1)
         col.push(cols);
@@ -208,7 +204,7 @@ namespace torch_alpaka {
     // Append a block based on a typed pointer and a column object.
     // Can be normal column or eigen column.
     template <typename T>
-    requires (!std::is_pointer_v<T>)
+      requires std::is_arithmetic_v<T>
     void append_block(std::string name, const Columns& columns, T* ptr) {
       blocks.try_emplace(name, nElements, ptr, columns, get_type<T>(), sizeof(T));
       order.push_back(name);
@@ -217,8 +213,9 @@ namespace torch_alpaka {
 
     // No column value indicates a scalar column, as they can't be stacked.
     template <typename T>
-    void append_block(std::string name, T& ptr) {
-      blocks.try_emplace(name, nElements, &ptr, get_type<T>(), sizeof(T));
+      requires std::is_arithmetic_v<T>
+    void append_block(std::string name, T& val) {
+      blocks.try_emplace(name, nElements, &val, get_type<T>(), sizeof(T));
       order.push_back(name);
       nBlocks += 1;
     }
@@ -227,9 +224,8 @@ namespace torch_alpaka {
     // It can be changed by passing a vector of the block names afterwards.
     // All blocks have to be mentioned.
     void change_order(const std::vector<std::string>& new_order) { order = new_order; }
+    void change_order(std::vector<std::string>&& new_order) { order = std::move(new_order); }
 
-    inline Block<SOA_Layout> operator[](std::string key) const {
-      return blocks.at(key);
-    }
+    inline Block<SOA_Layout> operator[](std::string key) const { return blocks.at(key); }
   };
 }  // namespace torch_alpaka

@@ -255,8 +255,8 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
 
     auto view = deviceCollection.view();
     SoAMetadata<SoA> input(batch_size);
-    input.append_eigen_block("vector", 2, view[0].a());
-    input.append_eigen_block("matrix", 1, view[0].c());
+    input.append_block("vector", 2, view[0].a());
+    input.append_block("matrix", 1, view[0].c());
     input.append_block("matrix2", {{1, 2, 2}}, view.c());
     input.append_block("normal", 3, view.x());
     input.append_block("scalar", view.type());
