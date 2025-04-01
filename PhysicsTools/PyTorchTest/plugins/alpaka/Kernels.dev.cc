@@ -31,4 +31,41 @@ void Kernels::FillParticleCollection(Queue &queue, ParticleCollection &data, flo
   alpaka::wait(queue);
 }
 
+class AssertClassificationKernel {
+ public:
+  template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
+  ALPAKA_FN_ACC void operator()(const TAcc &acc, ClassificationCollection::View data) const {
+    for (auto tid : uniform_elements(acc, data.metadata().size())) {
+      ALPAKA_ASSERT_ACC(data.c1()[tid] == 0.5f);
+      ALPAKA_ASSERT_ACC(data.c2()[tid] == 0.5f);
+    }
+  }
+};
+
+void Kernels::AssertClassification(Queue &queue, ClassificationCollection &data) {
+  uint32_t threads_per_block = 512;
+  uint32_t blocks_per_grid = divide_up_by(data.view().metadata().size(), threads_per_block);      
+  auto grid = make_workdiv<Acc1D>(blocks_per_grid, threads_per_block);
+  alpaka::exec<Acc1D>(queue, grid, AssertClassificationKernel{}, data.view());
+  alpaka::wait(queue);
+}
+
+class AssertRegressionKernel {
+ public:
+  template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
+  ALPAKA_FN_ACC void operator()(const TAcc &acc, RegressionCollection::View data) const {
+    for (auto tid : uniform_elements(acc, data.metadata().size())) {
+      ALPAKA_ASSERT_ACC(data.reco_pt()[tid] == 0.5f);
+    }
+  }
+};
+
+void Kernels::AssertRegression(Queue &queue, RegressionCollection &data) {
+  uint32_t threads_per_block = 512;
+  uint32_t blocks_per_grid = divide_up_by(data.view().metadata().size(), threads_per_block);      
+  auto grid = make_workdiv<Acc1D>(blocks_per_grid, threads_per_block);
+  alpaka::exec<Acc1D>(queue, grid, AssertRegressionKernel{}, data.view());
+  alpaka::wait(queue);
+}
+
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE

@@ -94,6 +94,11 @@ class CheckKernel {
         printf("| %1.1f | %1.1f |\n", view.m()[i], view.n()[i]);
       }
     }
+
+    for (int32_t tid : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
+      ALPAKA_ASSERT_ACC(view.m()[tid] == 0.5f);
+      ALPAKA_ASSERT_ACC(view.n()[tid] == 0.5f);
+    }
   }
 };
  
@@ -120,7 +125,6 @@ void testModelInference::test() {
   PortableCollection<SoAResult, Device> resultCollection(batch_size, alpakaDevice);
   fill(queue, positionCollection);
   alpaka::wait(queue);
-  check(queue, resultCollection);
 
   std::string model_path = dataPath_ + "/classifier.pt";
 

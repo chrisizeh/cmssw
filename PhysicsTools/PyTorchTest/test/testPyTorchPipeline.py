@@ -65,7 +65,7 @@ process.Regression = process.RegressionStruct.clone(
 process.path = cms.Path(
     process.DataLoader + 
     process.Classifier + 
-    # process.Regression +  # cuBLAS context issue
+    process.Regression +  # cuBLAS context issue
     process.Combinatorial
 )
 

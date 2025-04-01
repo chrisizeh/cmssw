@@ -12,7 +12,8 @@ Classifier::Classifier(edm::ParameterSet const& params, const Model *cache)
     inputs_token_{consumes(params.getParameter<edm::InputTag>("inputs"))},
     outputs_token_{produces()},
     number_of_classes_{params.getParameter<uint32_t>("numberOfClasses")},
-    backend_{params.getParameter<std::string>("backend")} {}
+    backend_{params.getParameter<std::string>("backend")},
+    kernels_{std::make_unique<Kernels>()} {}
 
 std::unique_ptr<Model> Classifier::initializeGlobalCache(const edm::ParameterSet &param) {
   auto model_path = param.getParameter<edm::FileInPath>("classificationModelPath").fullPath();
@@ -42,8 +43,12 @@ void Classifier::produce(device::Event &event, const device::EventSetup &event_s
   globalCache()->forward<ParticleSoA, ClassificationSoA>(
     model_metadata, inputs.buffer().data(), outputs.buffer().data());
 
+  // assert output match expected  
+  kernels_->AssertClassification(event.queue(), outputs);
+  alpaka::wait(event.queue());
   event.emplace(outputs_token_, std::move(outputs));
-  reset_guard();
+  
+  // reset_guard();
   std::cout << "(Classifier) OK" << std::endl; 
 }
 

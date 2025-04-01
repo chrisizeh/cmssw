@@ -11,7 +11,8 @@ Regression::Regression(edm::ParameterSet const& params, const Model *cache)
   : EDProducer<edm::GlobalCache<Model>>(params),
     inputs_token_{consumes(params.getParameter<edm::InputTag>("inputs"))},
     outputs_token_{produces()},
-    backend_{params.getParameter<std::string>("backend")} {}
+    backend_{params.getParameter<std::string>("backend")},
+    kernels_{std::make_unique<Kernels>()} {}
 
 std::unique_ptr<Model> Regression::initializeGlobalCache(const edm::ParameterSet &param) {
   auto model_path = param.getParameter<edm::FileInPath>("regressionModelPath").fullPath();
@@ -37,9 +38,13 @@ void Regression::produce(device::Event &event, const device::EventSetup &event_s
   assert(tools::device(event.queue()) == globalCache()->device());  
   globalCache()->forward<ParticleSoA, RegressionSoA>(
     model_metadata, inputs.buffer().data(), outputs.buffer().data());
-
+  
+  // assert output match expected  
+  kernels_->AssertRegression(event.queue(), outputs);
+  alpaka::wait(event.queue());
   event.emplace(outputs_token_, std::move(outputs));
-  reset_guard();
+  // reset_guard();
+  std::cout << "(Regressor) OK" << std::endl; 
 }
 
 void Regression::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {

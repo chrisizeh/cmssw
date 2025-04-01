@@ -17,6 +17,7 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
 #include "PhysicsTools/PyTorch/interface/Model.h"
+#include "PhysicsTools/PyTorchTest/plugins/alpaka/Kernels.h"
 
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
@@ -37,6 +38,7 @@ class Regression : public stream::EDProducer<edm::GlobalCache<Model>> {
   const device::EDGetToken<ParticleCollection> inputs_token_;
   const device::EDPutToken<RegressionCollection> outputs_token_;
   const std::string backend_;
+  std::unique_ptr<Kernels> kernels_ = nullptr;
 };
 
 }  // ALPAKA_ACCELERATOR_NAMESPACE

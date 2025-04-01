@@ -18,6 +18,17 @@ class ClassifierModel(nn.Module):
         super(ClassifierModel, self).__init__()
         self.fc = nn.Linear(input_dim, output_dim)  # Fully connected layer
         self.softmax = nn.Softmax(dim=1)  # Softmax activation
+        self.fc.weight.data = torch.tensor(
+            [
+                [1.0, 1.0, 0.0], 
+                [1.0, 1.0, 0.0]
+            ]
+        )
+        self.fc.bias.data = torch.tensor([0.0, 0.0])
+
+        # note: Prevent updates
+        self.fc.weight.requires_grad = False
+        self.fc.bias.requires_grad = False
     
     def forward(self, input):
         x = self.fc(input)  # Linear transformation
@@ -36,6 +47,7 @@ x = torch.rand((n, 3))  # Random input tensor with 3 features
 # Save the model using TorchScript
 tm = torch.jit.trace(module.eval(), x)
 tm.save(f"{datadir}/classifier.pt")
-tm.save(f"/afs/cern.ch/user/l/lmichals/private/CMSSW_15_0_0/src/classifier.pt")
+tm.save(f"/afs/cern.ch/user/l/lmichals/public/CMSSW_15_0_0/src/classifier.pt")
+
 
 print(f"{datadir}/classifier.pt created successfully!")
