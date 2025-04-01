@@ -1,4 +1,4 @@
-#include <iostream>
+#include <type_traits>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
@@ -191,6 +191,7 @@ namespace torch_alpaka {
 
     // Append a block of eigen columns. The type is inferred by the matrix map.
     template <typename T, int rows, int cols>
+    requires (!std::is_pointer_v<T>)
     void append_eigen_block(std::string name,
                             const int columns,
                             Eigen::Map<Eigen::Matrix<T, rows, cols>, 0, Eigen::InnerStride<>> ptr) {
@@ -207,6 +208,7 @@ namespace torch_alpaka {
     // Append a block based on a typed pointer and a column object.
     // Can be normal column or eigen column.
     template <typename T>
+    requires (!std::is_pointer_v<T>)
     void append_block(std::string name, const Columns& columns, T* ptr) {
       blocks.try_emplace(name, nElements, ptr, columns, get_type<T>(), sizeof(T));
       order.push_back(name);
