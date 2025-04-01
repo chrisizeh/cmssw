@@ -144,15 +144,16 @@ namespace torch_alpaka {
         size_t bytes = torch::elementSize(types[i]);
 
         if (order_[i] != -1) {
+          std::string name(std::to_string(i));
           if (columns[i][0] > 0)
-            blocks.try_emplace(std::to_string(i), nElements_, ptr + skip, columns[i], types[i], bytes);
+            blocks.try_emplace(name, nElements_, ptr + skip, columns[i], types[i], bytes);
           else
-            blocks.try_emplace(std::to_string(i), nElements_, ptr + skip, types[i], bytes);
+            blocks.try_emplace(name, nElements_, ptr + skip, types[i], bytes);
 
-          order[order_[i]] = std::to_string(i);
+          order[order_[i]] = name;
           nBlocks += 1;
 
-          skip += columns[i][0] * blocks[std::to_string(i)].stride[1] * bytes;
+          skip += columns[i][0] * blocks[name].stride[1] * bytes;
         } else {
           Block<SOA_Layout> block;
           if (columns[i][0] > 0)
@@ -188,7 +189,7 @@ namespace torch_alpaka {
     // Append a block of eigen columns. The type is inferred by the matrix map.
     template <typename T, int rows, int cols>
       requires std::is_arithmetic_v<T>
-    void append_block(std::string name,
+    void append_block(const std::string& name,
                       int columns,
                       Eigen::Map<Eigen::Matrix<T, rows, cols>, 0, Eigen::InnerStride<>> ptr) {
       T* p = &ptr(0, 0);
@@ -205,7 +206,7 @@ namespace torch_alpaka {
     // Can be normal column or eigen column.
     template <typename T>
       requires std::is_arithmetic_v<T>
-    void append_block(std::string name, const Columns& columns, T* ptr) {
+    void append_block(const std::string& name, const Columns& columns, T* ptr) {
       blocks.try_emplace(name, nElements, ptr, columns, get_type<T>(), sizeof(T));
       order.push_back(name);
       nBlocks += 1;
@@ -214,7 +215,7 @@ namespace torch_alpaka {
     // No column value indicates a scalar column, as they can't be stacked.
     template <typename T>
       requires std::is_arithmetic_v<T>
-    void append_block(std::string name, T& val) {
+    void append_block(const std::string& name, T& val) {
       blocks.try_emplace(name, nElements, &val, get_type<T>(), sizeof(T));
       order.push_back(name);
       nBlocks += 1;
@@ -226,6 +227,6 @@ namespace torch_alpaka {
     void change_order(const std::vector<std::string>& new_order) { order = new_order; }
     void change_order(std::vector<std::string>&& new_order) { order = std::move(new_order); }
 
-    inline Block<SOA_Layout> operator[](std::string key) const { return blocks.at(key); }
+    inline Block<SOA_Layout> operator[](const std::string& key) const { return blocks.at(key); }
   };
 }  // namespace torch_alpaka
