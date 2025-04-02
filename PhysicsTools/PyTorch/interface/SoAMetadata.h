@@ -1,20 +1,11 @@
+#ifndef PHYSICS_TOOLS__PYTORCH__INTERFACE__SOAMETADATA_H_
+#define PHYSICS_TOOLS__PYTORCH__INTERFACE__SOAMETADATA_H_
+
 #include <type_traits>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
 namespace torch_alpaka {
-
-  constexpr auto Byte = torch::kByte;
-  constexpr auto Char = torch::kChar;
-  constexpr auto Short = torch::kShort;
-  constexpr auto Int = torch::kInt;
-  constexpr auto Long = torch::kLong;
-  constexpr auto UInt16 = torch::kUInt16;
-  constexpr auto UInt32 = torch::kUInt32;
-  constexpr auto UInt64 = torch::kUInt64;
-  constexpr auto Half = torch::kHalf;
-  constexpr auto Float = torch::kFloat;
-  constexpr auto Double = torch::kDouble;
 
   // Wrapper struct to merge info about scalar columns and multidimensional eigen columns
   struct Columns {
@@ -230,3 +221,4 @@ namespace torch_alpaka {
     inline Block<SOA_Layout> operator[](const std::string& key) const { return blocks.at(key); }
   };
 }  // namespace torch_alpaka
+#endif  // PHYSICS_TOOLS__PYTORCH__INTERFACE__SOAMETADATA_H_

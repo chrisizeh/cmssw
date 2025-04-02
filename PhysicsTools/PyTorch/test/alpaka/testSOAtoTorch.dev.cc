@@ -23,8 +23,8 @@
 #include "PhysicsTools/PyTorch/interface/Converter.h"
 #include "PhysicsTools/PyTorch/test/testBase.h"
 
-#include "PhysicsTools/PyTorchAlpaka/interface/AlpakaConfig.h"
-#include "PhysicsTools/PyTorchAlpaka/interface/Converter.h"
+#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
+#include "PhysicsTools/PyTorch/interface/Converter.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torch_alpaka {
 
@@ -113,7 +113,7 @@ using namespace ::torch_alpaka;
     CPPUNIT_ASSERT(alpakaDevices.size());
     const auto& alpakaDevice = alpakaDevices[0];
     Queue queue{alpakaDevice};
-    torch::Device torchDevice(kDeviceType);
+    torch::Device torchDevice(kTorchDeviceType);
 
     // Number of elements
     const std::size_t batch_size = 4;

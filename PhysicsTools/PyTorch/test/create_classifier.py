@@ -47,7 +47,6 @@ x = torch.rand((n, 3))  # Random input tensor with 3 features
 # Save the model using TorchScript
 tm = torch.jit.trace(module.eval(), x)
 tm.save(f"{datadir}/classifier.pt")
-tm.save(f"/afs/cern.ch/user/l/lmichals/public/CMSSW_15_0_0/src/classifier.pt")
 
 
 print(f"{datadir}/classifier.pt created successfully!")

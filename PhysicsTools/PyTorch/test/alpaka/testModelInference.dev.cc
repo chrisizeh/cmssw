@@ -132,10 +132,10 @@ void testModelInference::test() {
   model.to(queue);
   CPPUNIT_ASSERT(tools::device(queue) == model.device());
 
-  InputMetadata inputMask(Float, 3);
-  OutputMetadata outputMask(Float, 2); 
-  ModelMetadata metadata(batch_size, inputMask, outputMask);
+  SoAMetadata<SoAPosition> inputMask(batch_size, positionCollection.buffer().data(), Float, 3);
+  SoAMetadata<SoAResult> outputMask(batch_size, resultCollection.buffer().data(), Float, 2); 
+  ModelMetadata metadata(inputMask, outputMask);
 
-  model.forward<SoAPosition, SoAResult>(metadata, positionCollection.buffer().data(), resultCollection.buffer().data());
+  model.forward(metadata);
   check(queue, resultCollection);
 }
