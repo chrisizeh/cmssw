@@ -1,65 +1,76 @@
 # PyTorch Wrapper for C++ and Alpaka
 
-The efficiently use PyTorch models on the GPU with SoA input, a producer is provided, which automatically converts an input SoA into multiple tensors, runs the model and stores the output in a predefined SoA. This is done by providing metadata of the input and output SoA to the producer. Then, using the raw byte buffer of the SoA, it is wrapped by a tensor object, without copying the data.
+The interface provides a converter to dynamically wrap SoA data into one or more `torch::tensors` without the need to copy data. This can be used directly with a PyTorch model. The result can also be dynamically placed into a SoA buffer.
 
 ## Metadata
 
-There are three types of Metadata, `InputMetadata`, `OutputMetadata` and `ModelMetadata`. The `ModelMetadata` consists of the `OutputMetadata` and `InputMetadata`, and the number of elements that are present. This number of elements are the number of rows in the SoA, which must be similar for Input and Output SoA.
+The structual information of the input and output SoA are stored in an `SoAMetadata`. These two objects are then combined to a `ModelMetadata`, to be used by the `Converter`.
 
-To create a single tensor, the columns have to be of the same type. If the SoA contains columns of different types, it can be partitioned into blocks, with each block getting converted to a torch tensor. This is done, by passing to the constructor of the InputMetadata vectors (see example). 
-For constructing of the metadata, the following info is needed for each block:
+### Defining Metadata
 
-- Type: The torch type, which is associated to a C++ type. The following types are support by torch:
-    - `Byte = torch::kByte`
-    - `Char = torch::kChar`
-    - `Short = torch::kShort`
-    - `Int = torch::kInt`
-    - `Long = torch::kLong`
-    - `UInt16 = torch::kUInt16`
-    - `UInt32 = torch::kUInt32`
-    - `UInt64 = torch::kUInt64`
-    - `Half = torch::kHalf`
-    - `Float = torch::kFloat`
-    - `Double = torch::kDouble`
-- Columns: The number of columns associated to the block.
-    - If the block is a scalar, columns have to be `0`, defining that it is not a column with `n` elements.
-    - If the block is an eigen object, columns must be a vector of the number of columns and dimension of the object.\
-    e.g. a block of two columns of `eigen::Matrix3d` has the columns value `{2, 3, 3}`.
-- Optional: Ordering. If the blocks should be returned in a different order then in the SoA, or some block should be masked.
-    - The value in the ordering defines the position in the resulting vector the corresponding tensor will be at.
-    - To mask a block, the position in the ordering vector must be a `-1`.
-    - e.g. {2, -1, 0, 1}, results in the following vector:
-        - Block 3
-        - Block 4
-        - Block 1
+Metadata can be defined using either an automatic or explicit approach. The automatic approach deduces types from the provided pointers, while the explicit approach requires manually specifying types and structures.
 
-## Example
-
-SOA Template for Model Input:
-```
+#### Example SOA Template for Model Input:
+```cpp
 GENERATE_SOA_LAYOUT(SoATemplate,
     SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
     SOA_EIGEN_COLUMN(Eigen::Vector3d, b),
-
     SOA_EIGEN_COLUMN(Eigen::Matrix2f, c),
-
     SOA_COLUMN(double, x),
     SOA_COLUMN(double, y),
     SOA_COLUMN(double, z),
-
     SOA_SCALAR(float, type),
     SOA_SCALAR(int, someNumber));
 ```
 
-SOA Template for Model Output:
-```
+#### Example SOA Template for Model Output:
+```cpp
 GENERATE_SOA_LAYOUT(SoAOutputTemplate,
-                    SOA_COLUMN(int, cluster))
+                    SOA_COLUMN(int, cluster));
 ```
 
-Metadata Definition for converting to tensor:
+#### Metadata Definition (Automatic Approach):
+```cpp
+PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
+PortableCollection<SoA_Result, Device> deviceResultCollection(batch_size, queue);
+fill(queue, deviceCollection);
+auto view = deviceCollection.view();
+auto result_view = deviceResultCollection.view();
+
+SoAMetadata<SoA> input(batch_size);
+input.append_block("vector", 2, view[0].a());
+input.append_block("matrix", 1, view[0].c());
+input.append_block("normal", 3, view.x());
+input.append_block("scalar", view.type());
+input.change_order({"normal", "scalar", "matrix", "vector"});
+
+SoAMetadata<SoA> output(batch_size);
+output.append_block("result", 1, result_view.cluster());
+ModelMetadata metadata(input, output);
 ```
-InputMetadata input({Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
+
+#### Metadata Definition (Explicit Approach):
+```cpp
+InputMetadata input({Double, Float, Double, Float, Int}, 
+                    {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, 
+                    {3, 2, 0, 1, -1});
 OutputMetadata output(Int, 1);
 ModelMetadata metadata(batch_size, input, output);
 ```
+
+* The first vector `{Double, Float, Double, Float, Int}` defines the data types of the input blocks.
+* The second vector specifies the structure of each block:
+    * `{2, 3}` represents a block with two columns of eigen vectors with 3 values.    
+    * `{1, 2, 2}` represents a block with one column of a 2x2 eigen matrix.
+    * `3` represents a block with three columns in the tensor.
+    * `0, 0` indicate two scalar values.
+* The third vector is optional, defining the ordering, desribed below.
+
+### Ordering of Blocks
+
+The function `change_order()` in the allows specifying the order in which the blocks should be processed. The order should match the expected input configuration of the PyTorch model.
+
+In the explicit approach, the order can be changed by providing a vector with the position of each block in the final tensor list. \
+To mask a block, the value in the ordering vector must be set to -1.\
+e.g. {2, -1, 0, 1}, results in the following order of the blocks:
+Block 3, Block 4, Block 1. Block 2 is masked.
