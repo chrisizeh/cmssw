@@ -47,15 +47,31 @@ inline torch::jit::script::Module load(const std::string &model_path) {
   }
 }
 
-inline int64_t queue_hash(const ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+inline std::string queue_hash(const ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
+  std::stringstream repr;
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
   thread_local auto stream = c10::cuda::getStreamFromExternal(
-    queue.getNativeHandle(), device(queue).index());
-  return stream.id();
+  queue.getNativeHandle(), device(queue).index());
+  repr << "0x" << std::hex << std::hash<void*>{}(stream.stream());
+  return repr.str();
 #elif ALPAKA_ACC_GPU_HIP_ENABLED
-  return 0;
+  return "0x0";
 #endif
-  return std::hash<std::thread::id>{}(std::this_thread::get_id());
+  repr << "0x" << std::hex << std::hash<std::thread::id>{}(std::this_thread::get_id());
+  return repr.str();
+}
+
+inline std::string current_stream_hash() {
+  std::stringstream repr;
+#ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
+  thread_local auto stream = c10::cuda::getCurrentCUDAStream();
+  repr << "0x" << std::hex << std::hash<void*>{}(stream.stream());
+  return repr.str();
+#elif ALPAKA_ACC_GPU_HIP_ENABLED
+  return "0x0";
+#endif
+  repr << "0x" << std::hex << std::hash<std::thread::id>{}(std::this_thread::get_id());
+  return repr.str();
 }
      
 }  // namespace torch_alpaka::tools
@@ -84,6 +100,10 @@ inline void set_guard(const alpaka_cuda_async::Queue &queue) {
   const auto dev = tools::device(queue);
   thread_local auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), dev.index());
   c10::cuda::setCurrentCUDAStream(stream);
+  cudaError_t err = cudaSetDevice(dev.index());
+  if (err != cudaSuccess) {
+    std::cerr << "CUDA set device failed: " << cudaGetErrorString(err) << std::endl;
+  }
 }
 
 inline void reset_guard() {

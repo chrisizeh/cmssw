@@ -22,28 +22,33 @@ std::unique_ptr<Model> Regression::initializeGlobalCache(const edm::ParameterSet
 void Regression::globalEndJob(const Model *cache) {}
 
 void Regression::produce(device::Event &event, const device::EventSetup &event_setup) {
-  std::cout << "(Regressor) hash=" << tools::queue_hash(event.queue()) << std::endl;
+  std::cout << "(Regressor) queue_hash=" << tools::queue_hash(event.queue()) << std::endl;
   set_guard(event.queue());
+  std::cout << "(Regressor -> set_guard) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
   auto& inputs =  const_cast<ParticleCollection&>(event.get(inputs_token_));;
   const size_t batch_size = inputs.const_view().metadata().size();
   auto outputs = RegressionCollection(batch_size, event.queue());
 
+  std::cout << "(Regressor -> event.get) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
   InputMetadata input_metadata(Float, 3);
   OutputMetadata output_metadata(Float, 1);
   ModelMetadata model_metadata(batch_size, input_metadata, output_metadata);
 
   if (tools::device(event.queue()) != globalCache()->device()) 
     globalCache()->to(event.queue());
-  std::cout << "(Regressor) model=" << globalCache()->device() << std::endl;  
   assert(tools::device(event.queue()) == globalCache()->device());  
+
+  std::cout << "(Regressor -> bind model) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
   globalCache()->forward<ParticleSoA, RegressionSoA>(
     model_metadata, inputs.buffer().data(), outputs.buffer().data());
+  std::cout << "(Regressor -> forward) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
   
   // assert output match expected  
   kernels_->AssertRegression(event.queue(), outputs);
-  alpaka::wait(event.queue());
+  std::cout << "(Regressor -> assert) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
   event.emplace(outputs_token_, std::move(outputs));
-  // reset_guard();
+  reset_guard();
+  std::cout << "(Regressor -> reset_guard) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
   std::cout << "(Regressor) OK" << std::endl; 
 }
 

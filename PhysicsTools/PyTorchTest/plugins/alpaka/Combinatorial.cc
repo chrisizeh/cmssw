@@ -14,7 +14,7 @@ Combinatorial::Combinatorial(edm::ParameterSet const& params)
     kernels_(std::make_unique<Kernels>()) {}
 
 void Combinatorial::produce(device::Event &event, const device::EventSetup &event_setup) {
-  std::cout << "(Combinatorial) hash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
+  std::cout << "(Combinatorial) queue_hash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
   const auto& inputs = event.get(inputs_token_);
   const size_t batch_size = inputs.const_view().metadata().size();
   auto outputs = ParticleCollection(batch_size, event.queue());

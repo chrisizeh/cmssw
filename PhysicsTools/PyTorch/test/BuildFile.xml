@@ -183,7 +183,7 @@
   <flags ALPAKA_BACKENDS="1"/>
 </bin>
 
-<bin file="alpaka/testModelInference.dev.cc testRunner.cc" name="testModelInference">
+<bin file="alpaka/testModelInference.cc testRunner.cc" name="testModelInference">
   <use name="boost_filesystem"/>
   <use name="alpaka"/>
   <use name="cppunit"/>
@@ -191,6 +191,7 @@
   <use name="pytorch-cuda"/>
   <use name="DataFormats/Portable"/>
   <use name="DataFormats/PortableTestObjects"/>
-  <flags ALPAKA_BACKENDS="cuda"/>
-  <flags ALPAKA_BACKENDS="serial"/>
+  <use name="HeterogeneousCore/AlpakaCore"/>
+  <use name="HeterogeneousCore/AlpakaInterface"/>
+  <flags ALPAKA_BACKENDS="1"/>
 </bin>

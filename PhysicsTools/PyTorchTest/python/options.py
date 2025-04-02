@@ -1,10 +1,13 @@
+import os
+
 import FWCore.ParameterSet.VarParsing as VarParsing
+
 
 args = VarParsing.VarParsing("analysis")
 
 args.register(
     "numberOfThreads",
-    8,
+    os.cpu_count(),
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,
     "Number of CMSSW threads"
@@ -20,7 +23,7 @@ args.register(
 
 args.register(
     "numberOfEvents",
-    2,
+    3,
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,
     "Number of events to process"
@@ -36,7 +39,7 @@ args.register(
 
 args.register(
     "batchSize",
-    32,
+    2**20,
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,        
     "Batch size"
