@@ -45,8 +45,11 @@ namespace torch_alpaka {
                                         const ModelMetadata<SOA_Input, SOA_Output>& metadata,
                                         torch::Device device) {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
-        assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr) % SOA_Output::alignment == 0);
-        Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[i]]) = tensors.at(i).toTensor();
+        // Only tensors are currenlty supported for conversion
+        if(tensors.at(i).isTensor()) {
+          assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr) % SOA_Output::alignment == 0);
+          Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[i]]) = tensors.at(i).toTensor();
+        } 
       }
     }
 
