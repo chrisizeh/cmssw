@@ -11,6 +11,15 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/CopyToHost.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+namespace torchportable {
+
+using namespace ::torchportable;
+using ::torchportable::ParticleCollectionHost;
+using ::torchportable::ClassificationCollectionHost;
+using ::torchportable::RegressionCollectionHost;
+using ::torchportable::ParticleCollectionDevice;
+using ::torchportable::ClassificationCollectionDevice;
+using ::torchportable::RegressionCollectionDevice;
 
 using ParticleCollection =
     std::conditional_t<
@@ -30,10 +39,11 @@ using RegressionCollection =
         RegressionCollectionHost, 
         RegressionCollectionDevice<Device>>;
 
+}  // namespace torchportable
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-ASSERT_DEVICE_MATCHES_HOST_COLLECTION(ParticleCollection, ParticleCollectionHost);
-ASSERT_DEVICE_MATCHES_HOST_COLLECTION(ClassificationCollection, ClassificationCollectionHost);
-ASSERT_DEVICE_MATCHES_HOST_COLLECTION(RegressionCollection, RegressionCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportable::ParticleCollection, torchportable::ParticleCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportable::ClassificationCollection, torchportable::ClassificationCollectionHost);
+ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportable::RegressionCollection, torchportable::RegressionCollectionHost);
 
 #endif  // DATA_FORMATS__PYTORCH_TEST__INTERFACE__ALPAKA__COLLECTIONS_H_

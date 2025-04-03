@@ -5,8 +5,6 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-// using namespace torch_alpaka;
-
 Combinatorial::Combinatorial(edm::ParameterSet const& params)
   : EDProducer<>(params),
     inputs_token_{consumes(params.getParameter<edm::InputTag>("inputs"))},
@@ -17,7 +15,7 @@ void Combinatorial::produce(device::Event &event, const device::EventSetup &even
   std::cout << "(Combinatorial) queue_hash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
   const auto& inputs = event.get(inputs_token_);
   const size_t batch_size = inputs.const_view().metadata().size();
-  auto outputs = ParticleCollection(batch_size, event.queue());
+  auto outputs = torchportable::ParticleCollection(batch_size, event.queue());
   std::cout << "(Combinatorial) kernel" << std::endl;  
   kernels_->FillParticleCollection(event.queue(), outputs, 0.32f);
   event.emplace(outputs_token_, std::move(outputs));

@@ -29,8 +29,8 @@ class Combinatorial : public stream::EDProducer<> {
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
  private:  
- const device::EDGetToken<ParticleCollection> inputs_token_;
- const device::EDPutToken<ParticleCollection> outputs_token_;
+ const device::EDGetToken<torchportable::ParticleCollection> inputs_token_;
+ const device::EDPutToken<torchportable::ParticleCollection> outputs_token_;
  std::unique_ptr<Kernels> kernels_ = nullptr;
 };
 

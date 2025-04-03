@@ -11,7 +11,7 @@ DataLoader::DataLoader(edm::ParameterSet const& params)
     batch_size_(params.getParameter<uint32_t>("batchSize")) {}
 
 void DataLoader::produce(device::Event &event, const device::EventSetup &event_setup) {
-  auto collection = ParticleCollection(batch_size_, event.queue());
+  auto collection = torchportable::ParticleCollection(batch_size_, event.queue());
   collection.zeroInitialise(event.queue());
   event.emplace(sic_put_token_, std::move(collection));
 }

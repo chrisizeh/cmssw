@@ -23,21 +23,19 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-using namespace torch_alpaka;  
-
-class Classifier : public stream::EDProducer<edm::GlobalCache<Model>> {
+class Classifier : public stream::EDProducer<edm::GlobalCache<torch_alpaka::Model>> {
  public:
-  Classifier(const edm::ParameterSet &params, const Model *cache);
+  Classifier(const edm::ParameterSet &params, const torch_alpaka::Model *cache);
 
-  static std::unique_ptr<Model> initializeGlobalCache(const edm::ParameterSet &params);
-  static void globalEndJob(const Model *cache);
+  static std::unique_ptr<torch_alpaka::Model> initializeGlobalCache(const edm::ParameterSet &params);
+  static void globalEndJob(const torch_alpaka::Model *cache);
 
   void produce(device::Event &event, const device::EventSetup &event_setup) override;
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
  private:  
-  const device::EDGetToken<ParticleCollection> inputs_token_;
-  const device::EDPutToken<ClassificationCollection> outputs_token_;
+  const device::EDGetToken<torchportable::ParticleCollection> inputs_token_;
+  const device::EDPutToken<torchportable::ClassificationCollection> outputs_token_;
   const uint32_t number_of_classes_;
   const std::string backend_;
   std::unique_ptr<Kernels> kernels_ = nullptr;

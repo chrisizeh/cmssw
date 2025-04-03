@@ -14,7 +14,7 @@ using namespace cms::alpakatools;
 class FillParticleCollectionKernel {
 public:
   template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
-  ALPAKA_FN_ACC void operator()(const TAcc &acc, ParticleCollection::View data, float value) const {
+  ALPAKA_FN_ACC void operator()(const TAcc &acc, torchportable::ParticleCollection::View data, float value) const {
     for (auto tid : uniform_elements(acc, data.metadata().size())) {
       data.pt()[tid] = value;
       data.phi()[tid] = value;
@@ -23,7 +23,7 @@ public:
   }
 };
 
-void Kernels::FillParticleCollection(Queue &queue, ParticleCollection &data, float value) {
+void Kernels::FillParticleCollection(Queue &queue, torchportable::ParticleCollection &data, float value) {
   uint32_t threads_per_block = 512;
   uint32_t blocks_per_grid = divide_up_by(data.view().metadata().size(), threads_per_block);      
   auto grid = make_workdiv<Acc1D>(blocks_per_grid, threads_per_block);
@@ -34,7 +34,7 @@ void Kernels::FillParticleCollection(Queue &queue, ParticleCollection &data, flo
 class AssertClassificationKernel {
  public:
   template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
-  ALPAKA_FN_ACC void operator()(const TAcc &acc, ClassificationCollection::View data) const {
+  ALPAKA_FN_ACC void operator()(const TAcc &acc, torchportable::ClassificationCollection::View data) const {
     for (auto tid : uniform_elements(acc, data.metadata().size())) {
       ALPAKA_ASSERT_ACC(data.c1()[tid] == 0.5f);
       ALPAKA_ASSERT_ACC(data.c2()[tid] == 0.5f);
@@ -42,7 +42,7 @@ class AssertClassificationKernel {
   }
 };
 
-void Kernels::AssertClassification(Queue &queue, ClassificationCollection &data) {
+void Kernels::AssertClassification(Queue &queue, torchportable::ClassificationCollection &data) {
   uint32_t threads_per_block = 512;
   uint32_t blocks_per_grid = divide_up_by(data.view().metadata().size(), threads_per_block);      
   auto grid = make_workdiv<Acc1D>(blocks_per_grid, threads_per_block);
@@ -53,14 +53,14 @@ void Kernels::AssertClassification(Queue &queue, ClassificationCollection &data)
 class AssertRegressionKernel {
  public:
   template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
-  ALPAKA_FN_ACC void operator()(const TAcc &acc, RegressionCollection::View data) const {
+  ALPAKA_FN_ACC void operator()(const TAcc &acc, torchportable::RegressionCollection::View data) const {
     for (auto tid : uniform_elements(acc, data.metadata().size())) {
       ALPAKA_ASSERT_ACC(data.reco_pt()[tid] == 0.5f);
     }
   }
 };
 
-void Kernels::AssertRegression(Queue &queue, RegressionCollection &data) {
+void Kernels::AssertRegression(Queue &queue, torchportable::RegressionCollection &data) {
   uint32_t threads_per_block = 512;
   uint32_t blocks_per_grid = divide_up_by(data.view().metadata().size(), threads_per_block);      
   auto grid = make_workdiv<Acc1D>(blocks_per_grid, threads_per_block);

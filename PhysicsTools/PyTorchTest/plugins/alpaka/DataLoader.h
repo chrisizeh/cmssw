@@ -22,7 +22,7 @@ class DataLoader : public stream::EDProducer<> {
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
  private:  
-  const device::EDPutToken<ParticleCollection> sic_put_token_;
+  const device::EDPutToken<torchportable::ParticleCollection> sic_put_token_;
   const std::string backend_;
   const uint32_t batch_size_;
 };

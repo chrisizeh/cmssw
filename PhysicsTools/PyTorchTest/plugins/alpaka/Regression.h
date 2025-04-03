@@ -21,23 +21,21 @@
 #include "PhysicsTools/PyTorchTest/plugins/alpaka/Kernels.h"
 
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
+namespace ALPAKA_ACCELERATOR_NAMESPACE {  
 
-using namespace torch_alpaka;  
-
-class Regression : public stream::EDProducer<edm::GlobalCache<Model>> {
+class Regression : public stream::EDProducer<edm::GlobalCache<torch_alpaka::Model>> {
  public:
-  Regression(const edm::ParameterSet &params, const Model *cache);
+  Regression(const edm::ParameterSet &params, const torch_alpaka::Model *cache);
 
-  static std::unique_ptr<Model> initializeGlobalCache(const edm::ParameterSet &params);
-  static void globalEndJob(const Model *cache);
+  static std::unique_ptr<torch_alpaka::Model> initializeGlobalCache(const edm::ParameterSet &params);
+  static void globalEndJob(const torch_alpaka::Model *cache);
 
   void produce(device::Event &event, const device::EventSetup &event_setup) override;
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
  private:  
-  const device::EDGetToken<ParticleCollection> inputs_token_;
-  const device::EDPutToken<RegressionCollection> outputs_token_;
+  const device::EDGetToken<torchportable::ParticleCollection> inputs_token_;
+  const device::EDPutToken<torchportable::RegressionCollection> outputs_token_;
   const std::string backend_;
   std::unique_ptr<Kernels> kernels_ = nullptr;
 };

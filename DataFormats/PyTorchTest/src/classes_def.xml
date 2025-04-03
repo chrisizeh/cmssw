@@ -1,20 +1,20 @@
 <lcgdict>
   <!-- Particle -->
-  <class name="ParticleSoA"/>
-  <class name="ParticleSoA::View"/>
-  <class name="ParticleSoA::ConstView"/>
-  <class name="ParticleCollectionHost"/>
-  <class name="edm::Wrapper<ParticleCollectionHost>" splitLevel="0"/>
+  <class name="torchportable::ParticleSoA"/>
+  <class name="torchportable::ParticleSoA::View"/>
+  <class name="torchportable::ParticleSoA::ConstView"/>
+  <class name="torchportable::ParticleCollectionHost"/>
+  <class name="edm::Wrapper<torchportable::ParticleCollectionHost>" splitLevel="0"/>
   <!-- Classification -->
-  <class name="ClassificationSoA"/>
-  <class name="ClassificationSoA::View"/>
-  <class name="ClassificationSoA::ConstView"/>
-  <class name="ClassificationCollectionHost"/>
-  <class name="edm::Wrapper<ClassificationCollectionHost>" splitLevel="0"/>
+  <class name="torchportable::ClassificationSoA"/>
+  <class name="torchportable::ClassificationSoA::View"/>
+  <class name="torchportable::ClassificationSoA::ConstView"/>
+  <class name="torchportable::ClassificationCollectionHost"/>
+  <class name="edm::Wrapper<torchportable::ClassificationCollectionHost>" splitLevel="0"/>
   <!-- Regression -->
-  <class name="RegressionSoA"/>
-  <class name="RegressionSoA::View"/>
-  <class name="RegressionSoA::ConstView"/>
-  <class name="RegressionCollectionHost"/>
-  <class name="edm::Wrapper<RegressionCollectionHost>" splitLevel="0"/>
+  <class name="torchportable::RegressionSoA"/>
+  <class name="torchportable::RegressionSoA::View"/>
+  <class name="torchportable::RegressionSoA::ConstView"/>
+  <class name="torchportable::RegressionCollectionHost"/>
+  <class name="edm::Wrapper<torchportable::RegressionCollectionHost>" splitLevel="0"/>
 </lcgdict>
