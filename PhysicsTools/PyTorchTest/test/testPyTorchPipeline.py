@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 from PhysicsTools.PyTorchTest.options import args
   
 args.parseArguments()
-process = cms.Process("PyTorchTestPipeline")
+process = cms.Process("PyTorchAlpakaTestPipeline")
 
 # enable multithreading
 process.options.numberOfThreads = args.numberOfThreads if args.numberOfThreads > 1 else 1 
@@ -25,37 +25,31 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1
 process.options.wantSummary = False
 
 # load pipeline chain
-process.load("PhysicsTools.PyTorchTest.data_loader")
-process.load("PhysicsTools.PyTorchTest.classifier")
-process.load("PhysicsTools.PyTorchTest.combinatorial")
-process.load("PhysicsTools.PyTorchTest.regression")
+process.load("PhysicsTools.PyTorchTest.modules")
 
 # setup chain configs
-process.DataLoader = process.DataLoaderStruct.clone(
+process.TorchAlpakaDataProducer = process.TorchAlpakaDataProducerStruct.clone(
     batchSize = cms.uint32(args.batchSize if args.batchSize > 1 else 1),
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string(args.backend)
     ),
 )
-process.Classifier = process.ClassifierStruct.clone(
-    inputs = cms.InputTag('DataLoader'),
-    classificationModelPath = cms.FileInPath(args.classificationModelPath),
-    numberOfClasses = cms.uint32(args.numberOfClasses),
-    backend = args.backend,
+process.TorchAlpakaClassificationProducer = process.TorchAlpakaClassificationProducerStruct.clone(
+    inputs = cms.InputTag('TorchAlpakaDataProducer'),
+    modelPath = cms.FileInPath(args.classificationModelPath),
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string(args.backend)
     ),
 )
-process.Combinatorial = process.CombinatorialStruct.clone(
-    inputs = cms.InputTag('DataLoader'),
+process.TorchAlpakaRegressionProducer = process.TorchAlpakaRegressionProducerStruct.clone(
+    inputs = cms.InputTag('TorchAlpakaDataProducer'),
+    modelPath = cms.FileInPath(args.regressionModelPath),
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string(args.backend)
     ),
 )
-process.Regression = process.RegressionStruct.clone(
-    inputs = cms.InputTag('DataLoader'),
-    regressionModelPath = cms.FileInPath(args.regressionModelPath),
-    backend = args.backend,
+process.AlpakaCombinatoricsProducer = process.AlpakaCombinatoricsProducerStruct.clone(
+    inputs = cms.InputTag('TorchAlpakaDataProducer'),
     alpaka = cms.untracked.PSet(
         backend = cms.untracked.string(args.backend)
     ),
@@ -63,10 +57,10 @@ process.Regression = process.RegressionStruct.clone(
 
 # schedule the modules
 process.path = cms.Path(
-    process.DataLoader + 
-    process.Classifier + 
-    process.Regression +  # cuBLAS context issue
-    process.Combinatorial
+    process.TorchAlpakaDataProducer + 
+    process.TorchAlpakaClassificationProducer + 
+    process.TorchAlpakaRegressionProducer +
+    process.AlpakaCombinatoricsProducer
 )
 
 process.schedule = cms.Schedule(

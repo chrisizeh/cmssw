@@ -10,9 +10,12 @@
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/CopyToHost.h"
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE {
-namespace torchportable {
+namespace ALPAKA_ACCELERATOR_NAMESPACE::torchportable {
 
+/**
+ * make the names from the top-level `torchportable` namespace visible for unqualified lookup
+ * inside the `ALPAKA_ACCELERATOR_NAMESPACE::torchportable` namespace
+ */
 using namespace ::torchportable;
 using ::torchportable::ParticleCollectionHost;
 using ::torchportable::ClassificationCollectionHost;
@@ -39,8 +42,7 @@ using RegressionCollection =
         RegressionCollectionHost, 
         RegressionCollectionDevice<Device>>;
 
-}  // namespace torchportable
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torchportable
 
 ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportable::ParticleCollection, torchportable::ParticleCollectionHost);
 ASSERT_DEVICE_MATCHES_HOST_COLLECTION(torchportable::ClassificationCollection, torchportable::ClassificationCollectionHost);

@@ -12,16 +12,15 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-class DataLoader : public stream::EDProducer<> {
+class TorchAlpakaDataProducer : public stream::EDProducer<> {
  public:
-  DataLoader(const edm::ParameterSet &params);
+  TorchAlpakaDataProducer(const edm::ParameterSet &params);
 
   void produce(device::Event &event, const device::EventSetup &event_setup) override;
   static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
  private:  
   const device::EDPutToken<torchportable::ParticleCollection> sic_put_token_;
-  const std::string backend_;
   const uint32_t batch_size_;
 };
 
@@ -29,18 +28,18 @@ class DataLoader : public stream::EDProducer<> {
 // IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////////
 
-DataLoader::DataLoader(edm::ParameterSet const& params)
+TorchAlpakaDataProducer::TorchAlpakaDataProducer(edm::ParameterSet const& params)
   : EDProducer<>(params),
     sic_put_token_{produces()},
     batch_size_(params.getParameter<uint32_t>("batchSize")) {}
 
-void DataLoader::produce(device::Event &event, const device::EventSetup &event_setup) {
+void TorchAlpakaDataProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
   auto collection = torchportable::ParticleCollection(batch_size_, event.queue());
   collection.zeroInitialise(event.queue());
   event.emplace(sic_put_token_, std::move(collection));
 }
 
-void DataLoader::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+void TorchAlpakaDataProducer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   edm::ParameterSetDescription desc;
   desc.add<uint32_t>("batchSize");
   descriptions.addWithDefaultLabel(desc);
@@ -48,4 +47,4 @@ void DataLoader::fillDescriptions(edm::ConfigurationDescriptions& descriptions) 
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE
 
-DEFINE_FWK_ALPAKA_MODULE(DataLoader);
+DEFINE_FWK_ALPAKA_MODULE(TorchAlpakaDataProducer);

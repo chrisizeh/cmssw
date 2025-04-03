@@ -7,7 +7,7 @@ args = VarParsing.VarParsing("analysis")
 
 args.register(
     "numberOfThreads",
-    8,
+    os.cpu_count(),
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,
     "Number of CMSSW threads"
@@ -59,12 +59,4 @@ args.register(
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.string,         
     "Regression model"
-)
-
-args.register(
-    "numberOfClasses",
-    2,
-    VarParsing.VarParsing.multiplicity.singleton,
-    VarParsing.VarParsing.varType.int,         
-    "Classification model number of classes"
 )
