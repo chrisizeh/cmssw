@@ -30,17 +30,16 @@ void Regression::produce(device::Event &event, const device::EventSetup &event_s
   auto outputs = RegressionCollection(batch_size, event.queue());
 
   std::cout << "(Regressor -> event.get) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
-  InputMetadata input_metadata(Float, 3);
-  OutputMetadata output_metadata(Float, 1);
-  ModelMetadata model_metadata(batch_size, input_metadata, output_metadata);
+  SoAMetadata<ParticleSoA> input_metadata(batch_size, inputs.buffer().data(), Float, 3);
+  SoAMetadata<RegressionSoA> output_metadata(batch_size, outputs.buffer().data(), Float, 1);
+  ModelMetadata model_metadata(input_metadata, output_metadata);
 
   if (tools::device(event.queue()) != globalCache()->device()) 
     globalCache()->to(event.queue());
   assert(tools::device(event.queue()) == globalCache()->device());  
 
   std::cout << "(Regressor -> bind model) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
-  globalCache()->forward<ParticleSoA, RegressionSoA>(
-    model_metadata, inputs.buffer().data(), outputs.buffer().data());
+  globalCache()->forward(model_metadata);
   std::cout << "(Regressor -> forward) current_cuda_stream=" << tools::current_stream_hash() << std::endl;
   
   // assert output match expected  

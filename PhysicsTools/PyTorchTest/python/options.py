@@ -7,7 +7,7 @@ args = VarParsing.VarParsing("analysis")
 
 args.register(
     "numberOfThreads",
-    os.cpu_count(),
+    8,
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,
     "Number of CMSSW threads"

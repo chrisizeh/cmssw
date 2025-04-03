@@ -32,13 +32,9 @@ class Model {
   const torch::Device &device() const { return device_; };
 
   template <typename InMemLayout, typename OutMemLayout>
-  void forward(
-    ModelMetadata &metadata, 
-    std::byte *inputs,
-    std::byte *outputs
-  ) const {
-    auto input_tensor = Converter<InMemLayout>::convert_input(metadata, device_, inputs);
-    Converter<OutMemLayout>::convert_output(metadata, device_, outputs) = model_.forward(input_tensor).toTensor();
+  void forward(const ModelMetadata<InMemLayout, OutMemLayout> &metadata) const {
+    auto input_tensor = Converter::convert_input(metadata, device_);
+    Converter::convert_output(metadata, device_) = model_.forward(input_tensor).toTensor();
   };
 
  private:

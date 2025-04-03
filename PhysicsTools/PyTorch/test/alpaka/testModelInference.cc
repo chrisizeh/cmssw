@@ -89,11 +89,11 @@ void testModelInference::test() {
   CPPUNIT_ASSERT(tools::device(queue) == model.device());
 
   // metadata for automatic tensor conversion
-  InputMetadata inputMask(Float, 3);
-  OutputMetadata outputMask(Float, 2); 
-  ModelMetadata metadata(batch_size, inputMask, outputMask);
+  SoAMetadata<SoAInputs> inputs_metadata(batch_size, inputs_device.buffer().data(), Float, 3);
+  SoAMetadata<SoAOutputs> outputs_metadata(batch_size, outputs_device.buffer().data(), Float, 2); 
+  ModelMetadata<SoAInputs, SoAOutputs> metadata(inputs_metadata, outputs_metadata);
   // inference
-  model.forward<SoAInputs, SoAOutputs>(metadata, inputs_device.buffer().data(), outputs_device.buffer().data());
+  model.forward(metadata);
 
   // check outputs
   alpaka::memcpy(queue, outputs_host.buffer(), outputs_device.buffer());

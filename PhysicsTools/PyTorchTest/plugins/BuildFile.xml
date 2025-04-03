@@ -2,6 +2,7 @@
   <use name="alpaka"/>
   <use name="boost_filesystem"/>
   <use name="cppunit"/>
+  <use name="eigen"/>
   <use name="pytorch"/>
   <use name="pytorch-cuda"/>
   <use name="DataFormats/PyTorchTest"/>
