@@ -1,9 +1,41 @@
-#include "PhysicsTools/PyTorchTest/plugins/alpaka/Combinatorial.h"
 
+#include <alpaka/alpaka.hpp>
+#include <torch/torch.h>
+#include <torch/script.h>
+
+#include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDGetToken.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
+#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
+#include "PhysicsTools/PyTorchTest/plugins/alpaka/Kernels.h"
 
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
+class Combinatorial : public stream::EDProducer<> {
+ public:
+  Combinatorial(const edm::ParameterSet &params);
+
+  void produce(device::Event &event, const device::EventSetup &event_setup) override;
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+
+ private:  
+  const device::EDGetToken<torchportable::ParticleCollection> inputs_token_;
+  const device::EDPutToken<torchportable::ParticleCollection> outputs_token_;
+  std::unique_ptr<Kernels> kernels_ = nullptr;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////////
 
 Combinatorial::Combinatorial(edm::ParameterSet const& params)
   : EDProducer<>(params),

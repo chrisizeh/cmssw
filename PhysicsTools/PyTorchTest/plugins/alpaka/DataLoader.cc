@@ -1,9 +1,33 @@
-#include "PhysicsTools/PyTorchTest/plugins/alpaka/DataLoader.h"
-
+#include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
+#include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EDPutToken.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/Event.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/EventSetup.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
+#include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
+#include "HeterogeneousCore/AlpakaInterface/interface/config.h"
 
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
+
+class DataLoader : public stream::EDProducer<> {
+ public:
+  DataLoader(const edm::ParameterSet &params);
+
+  void produce(device::Event &event, const device::EventSetup &event_setup) override;
+  static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
+
+ private:  
+  const device::EDPutToken<torchportable::ParticleCollection> sic_put_token_;
+  const std::string backend_;
+  const uint32_t batch_size_;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////////
 
 DataLoader::DataLoader(edm::ParameterSet const& params)
   : EDProducer<>(params),
