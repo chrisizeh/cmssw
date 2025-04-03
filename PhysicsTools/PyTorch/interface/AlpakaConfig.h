@@ -50,9 +50,9 @@ inline torch::jit::script::Module load(const std::string &model_path) {
 inline std::string queue_hash(const ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
   std::stringstream repr;
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-  thread_local auto stream = c10::cuda::getStreamFromExternal(
+  auto stream = c10::cuda::getStreamFromExternal(
   queue.getNativeHandle(), device(queue).index());
-  repr << "0x" << std::hex << std::hash<void*>{}(stream.stream());
+  repr << "0x" << std::hex << stream.stream();
   return repr.str();
 #elif ALPAKA_ACC_GPU_HIP_ENABLED
   return "0x0";
@@ -61,11 +61,12 @@ inline std::string queue_hash(const ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) 
   return repr.str();
 }
 
-inline std::string current_stream_hash() {
+inline std::string current_stream_hash(const ALPAKA_ACCELERATOR_NAMESPACE::Queue &queue) {
   std::stringstream repr;
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
-  thread_local auto stream = c10::cuda::getCurrentCUDAStream();
-  repr << "0x" << std::hex << std::hash<void*>{}(stream.stream());
+  const auto dev = tools::device(queue);
+  auto stream = c10::cuda::getCurrentCUDAStream(dev.index());
+  repr << "0x" << std::hex << stream.stream();
   return repr.str();
 #elif ALPAKA_ACC_GPU_HIP_ENABLED
   return "0x0";
@@ -90,15 +91,13 @@ constexpr auto Double = torch::kDouble;
 
 template <typename TQueue>
 inline void set_guard(const TQueue &queue);
-inline void reset_guard();
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
 template <>
 inline void set_guard(const alpaka_cuda_async::Queue &queue) {
-  // TODO: fix cuBLAS context management
   const auto dev = tools::device(queue);
-  thread_local auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), dev.index());
+  auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), dev.index());
   c10::cuda::setCurrentCUDAStream(stream);
   cudaError_t err = cudaSetDevice(dev.index());
   if (err != cudaSuccess) {
@@ -106,15 +105,10 @@ inline void set_guard(const alpaka_cuda_async::Queue &queue) {
   }
 }
 
-inline void reset_guard() {
-  c10::cuda::setCurrentCUDAStream(c10::cuda::getDefaultCUDAStream());
-}
-
 #elif ALPAKA_ACC_GPU_HIP_ENABLED
 
 template <>
 inline void set_guard(const alpaka_rocm_async::Queue &queue) {}
-inline void reset_guard() {}
 
 #elif ALPAKA_ACC_CPU_B_SEQ_T_SEQ_ENABLED 
 
@@ -127,8 +121,6 @@ inline void set_guard(const alpaka_serial_sync::Queue &queue) {
   }();
 }
 
-inline void reset_guard() {}
-
 #elif ALPAKA_ACC_CPU_B_TBB_T_SEQ_ENABLED
 
 template <>
@@ -139,8 +131,6 @@ inline void set_guard(const alpaka_tbb_async::Queue &queue) {
     return true;
   }();
 }
-
-inline void reset_guard() {}
 
 #else
 #error "Automatic backend detection failed."

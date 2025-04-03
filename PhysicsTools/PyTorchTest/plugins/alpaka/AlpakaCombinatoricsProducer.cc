@@ -44,12 +44,19 @@ AlpakaCombinatoricsProducer::AlpakaCombinatoricsProducer(edm::ParameterSet const
     kernels_(std::make_unique<Kernels>()) {}
 
 void AlpakaCombinatoricsProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-  std::cout << "(Combinatorics) queue_hash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
+  // debug stream usage in concurrently scheduled modules
+  std::cout << "(Combinatorics) hash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
+
+  // get data
   const auto& inputs = event.get(inputs_token_);
   const size_t batch_size = inputs.const_view().metadata().size();
   auto outputs = torchportable::ParticleCollection(batch_size, event.queue());
-  std::cout << "(Combinatorics) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;  
+
+  // dummy kernel emulation
   kernels_->FillParticleCollection(event.queue(), outputs, 0.32f);
+
+  // assert output match expected  
+  kernels_->AssertCombinatorics(event.queue(), outputs, 0.32f);
   event.emplace(outputs_token_, std::move(outputs));
   std::cout << "(Combinatorics) OK" << std::endl; 
 }

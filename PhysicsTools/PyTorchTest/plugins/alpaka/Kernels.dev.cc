@@ -31,6 +31,26 @@ void Kernels::FillParticleCollection(Queue &queue, torchportable::ParticleCollec
   alpaka::wait(queue);
 }
 
+class AssertCombinatoricsKernel {
+  public:
+   template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
+   ALPAKA_FN_ACC void operator()(const TAcc &acc, torchportable::ParticleCollection::View data, float value) const {
+     for (auto tid : uniform_elements(acc, data.metadata().size())) {
+       ALPAKA_ASSERT_ACC(data.pt()[tid] == value);
+       ALPAKA_ASSERT_ACC(data.phi()[tid] == value);
+       ALPAKA_ASSERT_ACC(data.eta()[tid] == value);
+     }
+   }
+ };
+ 
+ void Kernels::AssertCombinatorics(Queue &queue, torchportable::ParticleCollection &data, float value) {
+   uint32_t threads_per_block = 512;
+   uint32_t blocks_per_grid = divide_up_by(data.view().metadata().size(), threads_per_block);      
+   auto grid = make_workdiv<Acc1D>(blocks_per_grid, threads_per_block);
+   alpaka::exec<Acc1D>(queue, grid, AssertCombinatoricsKernel{}, data.view(), value);
+   alpaka::wait(queue);
+ }
+
 class AssertClassificationKernel {
  public:
   template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>

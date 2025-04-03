@@ -11,6 +11,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 class Kernels {
  public:
   void FillParticleCollection(Queue &queue, torchportable::ParticleCollection &data, float value);
+  void AssertCombinatorics(Queue &queue, torchportable::ParticleCollection &data, float value);
   void AssertClassification(Queue &queue, torchportable::ClassificationCollection &data);
   void AssertRegression(Queue &queue, torchportable::RegressionCollection &data);
 };

@@ -55,32 +55,39 @@ std::unique_ptr<torch_alpaka::Model> TorchAlpakaRegressionProducer::initializeGl
 void TorchAlpakaRegressionProducer::globalEndJob(const torch_alpaka::Model *cache) {}
 
 void TorchAlpakaRegressionProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-  std::cout << "(Regression) queue_hash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
+  // guard torch internal operations to not conflict with cmssw fw scheme
+  std::cout << "(Regression) qhash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
+  std::cout << "(Regression) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   torch_alpaka::set_guard(event.queue());
-  std::cout << "(Regression -> set_guard) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
+  std::cout << "(Regression::set_guard) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
+  // sanity check 
+  assert(torch_alpaka::tools::queue_hash(event.queue()) == torch_alpaka::tools::current_stream_hash(event.queue()));
+
+  // get data
+  std::cout << "(Regression::torchportable) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   auto& inputs =  const_cast<torchportable::ParticleCollection&>(event.get(inputs_token_));;
   const size_t batch_size = inputs.const_view().metadata().size();
   auto outputs = torchportable::RegressionCollection(batch_size, event.queue());
 
-  std::cout << "(Regression -> event.get) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
-  torch_alpaka::SoAMetadata<torchportable::ParticleSoA> input_metadata(batch_size, inputs.buffer().data(), torch_alpaka::Float, 3);
-  torch_alpaka::SoAMetadata<torchportable::RegressionSoA> output_metadata(batch_size, outputs.buffer().data(), torch_alpaka::Float, 1);
+  // metadata for automatic tensor conversion
+  std::cout << "(Regression::metadata) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
+  torch_alpaka::SoAMetadata<torchportable::ParticleSoA> input_metadata(batch_size);
+  input_metadata.append_block("particle_props", 3, inputs.view().pt()); // manually specify props block
+  torch_alpaka::SoAMetadata<torchportable::RegressionSoA> output_metadata(batch_size);
+  output_metadata.append_block("reco_props", 1, outputs.view().reco_pt()); // manually specify reco block
   torch_alpaka::ModelMetadata model_metadata(input_metadata, output_metadata);
 
+  // inference
+  std::cout << "(Regression::forward) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   if (torch_alpaka::tools::device(event.queue()) != globalCache()->device()) 
     globalCache()->to(event.queue());
   assert(torch_alpaka::tools::device(event.queue()) == globalCache()->device());  
-
-  std::cout << "(Regression -> bind model) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
   globalCache()->forward(model_metadata);
-  std::cout << "(Regression -> forward) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
   
   // assert output match expected  
+  std::cout << "(Regression::assert) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   kernels_->AssertRegression(event.queue(), outputs);
-  std::cout << "(Regression -> assert) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
   event.emplace(outputs_token_, std::move(outputs));
-  torch_alpaka::reset_guard();
-  std::cout << "(Regression -> reset_guard) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
   std::cout << "(Regression) OK" << std::endl; 
 }
 

@@ -152,7 +152,6 @@ void testTorchFromBufferModelEvalSinglePass(torch::jit::script::Module& model,
     // Not fully understood but std::move() is needed
     // https://stackoverflow.com/questions/71790378/assign-memory-blob-to-py-torch-output-tensor-c-api
     toTensor(c_gpu) = model.forward({toTensor(a_gpu), toTensor(b_gpu)}).toTensor();
-    torch_alpaka::reset_guard();
     //CPPUNIT_ASSERT(c_gpu_tensor.equal(output));
   } catch (exception& e) {
     cout << e.what() << endl;

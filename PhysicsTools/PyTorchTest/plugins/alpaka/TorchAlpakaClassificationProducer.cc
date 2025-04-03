@@ -55,36 +55,42 @@ std::unique_ptr<torch_alpaka::Model> TorchAlpakaClassificationProducer::initiali
 void TorchAlpakaClassificationProducer::globalEndJob(const torch_alpaka::Model *cache) {}
 
 void TorchAlpakaClassificationProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-  std::cout << "(Classification) queue_hash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
+  // guard torch internal operations to not conflict with fw execution scheme
+  std::cout << "(Classification) qhash=" << torch_alpaka::tools::queue_hash(event.queue()) << std::endl;
+  std::cout << "(Classification) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   torch_alpaka::set_guard(event.queue());
-  std::cout << "(Classification -> set_guard) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
+  std::cout << "(Classification::set_guard) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
+  // sanity check 
+  assert(torch_alpaka::tools::queue_hash(event.queue()) == torch_alpaka::tools::current_stream_hash(event.queue()));
+
+  // get data
   // TODO: const_cast should not be done by user
   // in principle should not be done by anyone
   // @see: torch::from_blob(void*) 
+  std::cout << "(Classification::torchportable) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   auto& inputs =  const_cast<torchportable::ParticleCollection&>(event.get(inputs_token_));;
   const size_t batch_size = inputs.const_view().metadata().size();
   auto outputs = torchportable::ClassificationCollection(batch_size, event.queue());
 
-  std::cout << "(Classification -> event.get) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
-  torch_alpaka::SoAMetadata<torchportable::ParticleSoA> input_metadata(batch_size, inputs.buffer().data(), torch_alpaka::Float, 3);
-  torch_alpaka::SoAMetadata<torchportable::ClassificationSoA> output_metadata(batch_size, outputs.buffer().data(), torch_alpaka::Float, 2);
+  // metadata for automatic tensor conversion
+  std::cout << "(Classification::metadata) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
+  torch_alpaka::SoAMetadata<torchportable::ParticleSoA> input_metadata(
+    batch_size, inputs.buffer().data(), torch_alpaka::Float, 3);
+  torch_alpaka::SoAMetadata<torchportable::ClassificationSoA> output_metadata(
+    batch_size, outputs.buffer().data(), torch_alpaka::Float, 2);
   torch_alpaka::ModelMetadata model_metadata(input_metadata, output_metadata);
 
+  // inference
+  std::cout << "(Classification::forward) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   if (torch_alpaka::tools::device(event.queue()) != globalCache()->device()) 
     globalCache()->to(event.queue());
   assert(torch_alpaka::tools::device(event.queue()) == globalCache()->device());  
-
-  std::cout << "(Classification -> bind model) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
   globalCache()->forward(model_metadata);
-  std::cout << "(Classification -> forward) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
 
-  // assert output match expected  
+  // assert output match expected 
+  std::cout << "(Classification::assert) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   kernels_->AssertClassification(event.queue(), outputs);
-  std::cout << "(Classification -> assert) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
   event.emplace(outputs_token_, std::move(outputs));
-  
-  torch_alpaka::reset_guard();
-  std::cout << "(Classification -> reset_guard) current_stream=" << torch_alpaka::tools::current_stream_hash() << std::endl;
   std::cout << "(Classification) OK" << std::endl; 
 }
 

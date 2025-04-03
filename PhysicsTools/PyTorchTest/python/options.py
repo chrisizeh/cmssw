@@ -23,7 +23,7 @@ args.register(
 
 args.register(
     "numberOfEvents",
-    3,
+    100,
     VarParsing.VarParsing.multiplicity.singleton,
     VarParsing.VarParsing.varType.int,
     "Number of events to process"

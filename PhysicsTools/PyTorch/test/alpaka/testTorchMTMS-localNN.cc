@@ -151,7 +151,6 @@ void testTorchFromBufferModelEvalSinglePass(SimpleDnnSum& model,
     torch_alpaka::set_guard(queue);
     using torch_alpaka::toTensor;
     toTensor(c_gpu) = model.forward(toTensor(a_gpu), toTensor(b_gpu));
-    torch_alpaka::reset_guard();
     //CPPUNIT_ASSERT(c_gpu_tensor.equal(output));
   } catch (exception& e) {
     cout << e.what() << endl;
