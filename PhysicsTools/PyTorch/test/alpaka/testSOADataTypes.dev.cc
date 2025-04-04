@@ -69,6 +69,7 @@ GENERATE_SOA_LAYOUT(SoATemplate,
 
 using SoA = SoATemplate<>;
 using SoAView = SoA::View;
+using SoAMetaRecords = SoA::View::Metarecords;
 
 class FillKernel {
  public:
@@ -251,18 +252,17 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
     // Create and fill needed portable collections
     PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
-    auto view = deviceCollection.view();
+    SoAMetaRecords cols = deviceCollection.view().records();
 
     SoAMetadata<SoA> input(batch_size);
-    input.append_block("vector", 2, view[0].a());
-    input.append_block("matrix", 1, view[0].c());
-    input.append_block("matrix2", {{1, 2, 2}}, view.c());
-    input.append_block("normal", 3, view.x());
-    input.append_block("scalar", view.type());
-    input.change_order({"normal", "scalar", "matrix", "vector", "matrix2"});
+    input.append_block("vector", cols.a(), cols.b());
+    input.append_block("matrix", cols.c());
+    input.append_block("normal", cols.x(), cols.y(), cols.z());
+    input.append_block("scalar", cols.type());
+    input.change_order({"normal", "scalar", "matrix", "vector"});
 
     SoAMetadata<SoA> output(batch_size);
-    output.append_block("result", 2, view.v());
+    output.append_block("result", cols.v());
     ModelMetadata metadata(input, output);
 
     alpaka::wait(queue);
@@ -333,14 +333,14 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
     PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
 
-    auto view = deviceCollection.view();
+    auto view = deviceCollection.view().records();
     SoAMetadata<SoA> input(batch_size);
-    input.append_block("x", 1, view.x());
-    input.append_block("y", 1, view.y());
+    input.append_block("x", view.x());
+    input.append_block("y", view.y());
 
     SoAMetadata<SoA> output(batch_size);
-    output.append_block("v", 1, view.v());
-    output.append_block("w", 1, view.w());
+    output.append_block("v", view.v());
+    output.append_block("w", view.w());
     ModelMetadata metadata(input, output);
 
     alpaka::wait(queue);

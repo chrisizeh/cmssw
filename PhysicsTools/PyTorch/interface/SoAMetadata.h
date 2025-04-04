@@ -1,12 +1,19 @@
 #ifndef PHYSICS_TOOLS__PYTORCH__INTERFACE__SOAMETADATA_H_
 #define PHYSICS_TOOLS__PYTORCH__INTERFACE__SOAMETADATA_H_
 
+#include <iostream>
+
 #include <type_traits>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include "DataFormats/SoATemplate/interface/SoALayout.h"
+
+using namespace cms::soa;
 
 namespace torch_alpaka {
+  template <typename T, typename... Others>
+    concept SameTypes = (std::same_as<T, Others> && ...);
 
   // Wrapper struct to merge info about scalar columns and multidimensional eigen columns
   struct Columns {
@@ -63,8 +70,6 @@ namespace torch_alpaka {
                                                const Columns& columns,
                                                size_t bytes,
                                                bool is_scalar = false) {
-      assert(SOA_Layout::alignment % bytes == 0);
-
       int N = columns.size() + 1;
       std::vector<long int> stride(N);
 
@@ -178,37 +183,46 @@ namespace torch_alpaka {
       order.push_back("0");
     }
 
-    // Append a block of eigen columns. The type is inferred by the matrix map.
-    template <typename T, int rows, int cols>
-      requires std::is_arithmetic_v<T>
-    void append_block(const std::string& name,
-                      int columns,
-                      Eigen::Map<Eigen::Matrix<T, rows, cols>, 0, Eigen::InnerStride<>> ptr) {
-      T* p = &ptr(0, 0);
-      Columns col({columns, rows});
-      if (cols > 1)
-        col.push(cols);
+    // TODO: Check columns are contiguous
+    template <typename T, typename... Others>
+      requires (SameTypes<typename T::ValueType, typename Others::ValueType...> && T::columnType == SoAColumnType::eigen)
+    void append_block(const std::string& name, T column, Others... others) {
+      const auto [ptr, stride] = column.tupleOrPointer();
 
-      blocks.try_emplace(name, nElements, p, col, get_type<T>(), sizeof(T));
+      Columns col({sizeof...(others) + 1, T::ValueType::RowsAtCompileTime});
+      if (T::ValueType::ColsAtCompileTime > 1)
+        col.push(T::ValueType::ColsAtCompileTime);
+
+      blocks.try_emplace(name, nElements, ptr, col, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
       order.push_back(name);
       nBlocks += 1;
     }
 
+    // TODO: Check columns are contiguous
     // Append a block based on a typed pointer and a column object.
     // Can be normal column or eigen column.
-    template <typename T>
-      requires std::is_arithmetic_v<T>
-    void append_block(const std::string& name, const Columns& columns, T* ptr) {
-      blocks.try_emplace(name, nElements, ptr, columns, get_type<T>(), sizeof(T));
+    template <typename T, typename... Others>
+      requires (SameTypes<typename T::ScalarType, typename Others::ScalarType...> && T::columnType == SoAColumnType::column)
+    void append_block(const std::string& name, T column, Others... others) {
+      blocks.try_emplace(name, nElements, column.tupleOrPointer(), sizeof...(others) + 1, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
       order.push_back(name);
       nBlocks += 1;
     }
 
+    // // General function to stop the variadic template
+    // template <typename T>
+    //   requires (T::columnType == SoAColumnType::column)
+    // void append_block(const std::string& name, T column) {
+    //   blocks.try_emplace(name, nElements, column.tupleOrPointer(), 1, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
+    //   order.push_back(name);
+    //   nBlocks += 1;
+    // }
+
     // No column value indicates a scalar column, as they can't be stacked.
-    template <typename T>
-      requires std::is_arithmetic_v<T>
-    void append_block(const std::string& name, T& val) {
-      blocks.try_emplace(name, nElements, &val, get_type<T>(), sizeof(T));
+    template <SoAColumnType col_type, typename T>
+      requires (std::is_arithmetic_v<T> && col_type == SoAColumnType::scalar)
+    void append_block(const std::string& name, SoAParametersImpl<col_type, T> column) {
+      blocks.try_emplace(name, nElements, column.tupleOrPointer(), get_type<T>(), sizeof(T));
       order.push_back(name);
       nBlocks += 1;
     }
