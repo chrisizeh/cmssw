@@ -8,7 +8,7 @@ The structual information of the input and output SoA are stored in an `SoAMetad
 
 ### Defining Metadata
 
-Metadata can be defined using either an automatic or explicit approach. The automatic approach deduces types from the provided pointers, while the explicit approach requires manually specifying types and structures.
+The `SoAMetadata' can be defined by first initialising the object and then adding blocks to the metadata. Each block is transformed into a tensor whose size and type are derived from the columns provided.
 
 #### Example SOA Template for Model Input:
 ```cpp
@@ -34,43 +34,21 @@ GENERATE_SOA_LAYOUT(SoAOutputTemplate,
 PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
 PortableCollection<SoA_Result, Device> deviceResultCollection(batch_size, queue);
 fill(queue, deviceCollection);
-auto view = deviceCollection.view();
-auto result_view = deviceResultCollection.view();
+auto records = deviceCollection.view().records();
+auto result_records = deviceResultCollection.view().records();
 
 SoAMetadata<SoA> input(batch_size);
-input.append_block("vector", 2, view[0].a());
-input.append_block("matrix", 1, view[0].c());
-input.append_block("normal", 3, view.x());
+input.append_block("eigen_vector", records.a(), records.b());
+input.append_block("eigen_matrix", records.c());
+input.append_block("column", records.x(), records.y(), records.z());
 input.append_block("scalar", view.type());
-input.change_order({"normal", "scalar", "matrix", "vector"});
+input.change_order({"column", "scalar", "eigen_matrix", "eigen_vector"});
 
 SoAMetadata<SoA> output(batch_size);
-output.append_block("result", 1, result_view.cluster());
+output.append_block("result", result_view.cluster());
 ModelMetadata metadata(input, output);
 ```
-
-#### Metadata Definition (Explicit Approach):
-```cpp
-InputMetadata input({Double, Float, Double, Float, Int}, 
-                    {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, 
-                    {3, 2, 0, 1, -1});
-OutputMetadata output(Int, 1);
-ModelMetadata metadata(batch_size, input, output);
-```
-
-* The first vector `{Double, Float, Double, Float, Int}` defines the data types of the input blocks.
-* The second vector specifies the structure of each block:
-    * `{2, 3}` represents a block with two columns of eigen vectors with 3 values.    
-    * `{1, 2, 2}` represents a block with one column of a 2x2 eigen matrix.
-    * `3` represents a block with three columns in the tensor.
-    * `0, 0` indicate two scalar values.
-* The third vector is optional, defining the ordering, desribed below.
 
 ### Ordering of Blocks
 
 The function `change_order()` in the allows specifying the order in which the blocks should be processed. The order should match the expected input configuration of the PyTorch model.
-
-In the explicit approach, the order can be changed by providing a vector with the position of each block in the final tensor list. \
-To mask a block, the value in the ordering vector must be set to -1.\
-e.g. {2, -1, 0, 1}, results in the following order of the blocks:
-Block 3, Block 4, Block 1. Block 2 is masked.
