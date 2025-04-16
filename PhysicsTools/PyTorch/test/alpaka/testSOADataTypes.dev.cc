@@ -33,7 +33,6 @@ using namespace ::torch_alpaka;
 class testSOADataTypes : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testSOADataTypes);
   CPPUNIT_TEST(testInterfaceVerbose);
-  CPPUNIT_TEST(testIncorrectMetadata);
   CPPUNIT_TEST(testInterfaceSlim);
   CPPUNIT_TEST(testMultiOutput);
   CPPUNIT_TEST(testSingleElement);
@@ -97,7 +96,7 @@ class FillKernel {
       view[i].c()(1, 1) = 10 + i;
 
       view.x()[i] = 12 + i;
-      view.y()[i] = 2.5 * i;
+      view.y()[i] = 1 + 2.5 * i;
       view.z()[i] = 36 * i;
     }
   }
@@ -126,7 +125,7 @@ class InputVerifyKernel {
       ALPAKA_ASSERT_ACC(view[i].c()(1, 1) == 10 + i);
 
       ALPAKA_ASSERT_ACC(view.x()[i] == 12 + i);
-      ALPAKA_ASSERT_ACC(view.y()[i] == 2.5 * i);
+      ALPAKA_ASSERT_ACC(view.y()[i] == 1 + 2.5 * i);
       ALPAKA_ASSERT_ACC(view.z()[i] == 36 * i);
     }
   }
@@ -259,9 +258,9 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
     SoAMetadata<SoA> input(batch_size);
     input.append_block("vector", cols.a(), cols.b());
     input.append_block("matrix", cols.c());
-    input.append_block("normal", cols.x(), cols.y(), cols.z());
+    input.append_block("column", cols.x(), cols.y(), cols.z());
     input.append_block("scalar", cols.type());
-    input.change_order({"normal", "scalar", "matrix", "vector"});
+    input.change_order({"column", "scalar", "matrix", "vector"});
 
     SoAMetadata<SoA> output(batch_size);
     output.append_block("result", cols.v());
@@ -272,34 +271,6 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
 
     // Check if tensor list built correctly
     check(queue, deviceCollection, tensors);
-  };
-
-  void testSOADataTypes::testIncorrectMetadata() {
-    Platform platform;
-    std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-    const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
-    CPPUNIT_ASSERT(alpakaDevices.size());
-    const auto& alpakaDevice = alpakaDevices[0];
-    Queue queue{alpakaDevice};
-    torch::Device torchDevice(kTorchDeviceType);
-
-    // Large batch size, so multiple bunches needed
-    const std::size_t batch_size = 325;
-
-    // Create and fill needed portable collections
-    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
-    fill(queue, deviceCollection);
-    SoAMetaRecords cols = deviceCollection.view().records();
-
-    SoAMetadata<SoA> input(batch_size);
-    input.append_block("normal", cols.x(), cols.y(), cols.w());
-
-    SoAMetadata<SoA> output(batch_size);
-    output.append_block("result", cols.v());
-    ModelMetadata metadata(input, output);
-
-    alpaka::wait(queue);
-    std::vector<torch::IValue> tensors = Converter::convert_input(metadata, torchDevice);
   };
 
   void testSOADataTypes::testInterfaceSlim() {

@@ -60,8 +60,7 @@ namespace torch_alpaka {
     static int get_bytes_per_column(int nElements, size_t bytes) {
       int per_bunch = SOA_Layout::alignment / bytes;
       int bunches = std::ceil(1.0 * nElements / per_bunch);
-      std::cout << "skip " << bunches * per_bunch << std::endl;
-      return bunches * per_bunch * bytes;
+      return bunches * per_bunch;
     }
 
   private:
@@ -99,7 +98,6 @@ namespace torch_alpaka {
         }
         stride[1] = stride[N - 1] * columns[N - 2];
       }
-      std::cout << "stride " << stride[1] << std::endl;
       return stride;
     }
   };
@@ -125,17 +123,17 @@ namespace torch_alpaka {
     }
 
     template <typename T, typename... Others>
-    bool check_location(int bytes, T column, T other_column, Others... others) {
-      return check_location(bytes, other_column, others...) &&  (column.tupleOrPointer() + bytes) == other_column.tupleOrPointer();
+    bool check_location(int elements, T column, T other_column, Others... others) {
+      return check_location(elements, other_column, others...) &&  (column.tupleOrPointer() + elements) == other_column.tupleOrPointer();
     }
 
     template <typename T>
-    bool check_location(int bytes, T column, T other_column) {
-      return check_location(bytes, other_column, others...) &&  (column.tupleOrPointer() + bytes) == other_column.tupleOrPointer();
+    bool check_location(int elements, T column, T other_column) {
+      return (column.tupleOrPointer() + elements) == other_column.tupleOrPointer();
     }
 
     template <typename T>
-    bool check_location(int bytes, T column) {
+    bool check_location(int elements, T column) {
       return true;
     }
 
@@ -227,21 +225,12 @@ namespace torch_alpaka {
       requires (SameTypes<typename T::ScalarType, typename Others::ScalarType...> && T::columnType == SoAColumnType::column)
     void append_block(const std::string& name, T column, Others... others) {
       int bytes = Block<SOA_Layout>::get_bytes_per_column(nElements, sizeof(typename T::ScalarType));
-      std::cout << check_location(bytes, column, others...) << std::endl;
+      assert(check_location(bytes, column, others...));
 
       blocks.try_emplace(name, nElements, column.tupleOrPointer(), sizeof...(others) + 1, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
       order.push_back(name);
       nBlocks += 1;
     }
-
-    // // General function to stop the variadic template
-    // template <typename T>
-    //   requires (T::columnType == SoAColumnType::column)
-    // void append_block(const std::string& name, T column) {
-    //   blocks.try_emplace(name, nElements, column.tupleOrPointer(), 1, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
-    //   order.push_back(name);
-    //   nBlocks += 1;
-    // }
 
     // No column value indicates a scalar column, as they can't be stacked.
     template <SoAColumnType col_type, typename T>
