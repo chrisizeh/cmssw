@@ -89,8 +89,12 @@ void testModelInference::test() {
   CPPUNIT_ASSERT(tools::device(queue) == model.device());
 
   // metadata for automatic tensor conversion
-  SoAMetadata<SoAInputs> inputs_metadata(batch_size, inputs_device.buffer().data(), Float, 3);
-  SoAMetadata<SoAOutputs> outputs_metadata(batch_size, outputs_device.buffer().data(), Float, 2); 
+  auto input_records = inputs_device.view().records();
+  auto output_records = outputs_device.view().records();
+  SoAMetadata<SoAInputs> inputs_metadata(batch_size);
+  inputs_metadata.append_block("result", input_records.x(), input_records.y(), input_records.z());
+  SoAMetadata<SoAOutputs> outputs_metadata(batch_size); 
+  outputs_metadata.append_block("result", output_records.m(), output_records.n());
   ModelMetadata<SoAInputs, SoAOutputs> metadata(inputs_metadata, outputs_metadata);
   // inference
   model.forward(metadata);

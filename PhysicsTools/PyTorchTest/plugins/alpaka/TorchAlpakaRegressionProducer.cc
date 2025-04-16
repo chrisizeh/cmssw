@@ -72,9 +72,9 @@ void TorchAlpakaRegressionProducer::produce(device::Event &event, const device::
   // metadata for automatic tensor conversion
   std::cout << "(Regression::metadata) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
   torch_alpaka::SoAMetadata<torchportable::ParticleSoA> input_metadata(batch_size);
-  input_metadata.append_block("particle_props", 3, inputs.view().pt()); // manually specify props block
+  input_metadata.append_block("particle_props", inputs.view().records().pt()); // manually specify props block
   torch_alpaka::SoAMetadata<torchportable::RegressionSoA> output_metadata(batch_size);
-  output_metadata.append_block("reco_props", 1, outputs.view().reco_pt()); // manually specify reco block
+  output_metadata.append_block("reco_props", outputs.view().records()reco_pt()); // manually specify reco block
   torch_alpaka::ModelMetadata model_metadata(input_metadata, output_metadata);
 
   // inference

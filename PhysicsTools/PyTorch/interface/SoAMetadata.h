@@ -144,65 +144,7 @@ namespace torch_alpaka {
     int nBlocks;
 
     SoAMetadata(int nElements_) : nElements(nElements_), nBlocks(0) {}
-
-    // Constructor for defining blocks with custom order inline
-    // Blocks can be masked by setting "-1" as the order position.
-    // The name of the block is the position it is called on.
-    SoAMetadata(int nElements_,
-                std::byte* ptr,
-                const std::vector<torch::ScalarType>& types,
-                const std::vector<Columns>& columns,
-                const std::vector<int>& order_)
-        : order(order_.size()), nElements(nElements_), nBlocks(0) {
-      int N = std::min({types.size(), columns.size()});
-      int skip = 0;
-
-      for (int i = 0; i < N; i++) {
-        size_t bytes = torch::elementSize(types[i]);
-
-        if (order_[i] != -1) {
-          std::string name(std::to_string(i));
-          if (columns[i][0] > 0)
-            blocks.try_emplace(name, nElements_, ptr + skip, columns[i], types[i], bytes);
-          else
-            blocks.try_emplace(name, nElements_, ptr + skip, types[i], bytes);
-
-          order[order_[i]] = name;
-          nBlocks += 1;
-
-          skip += columns[i][0] * blocks[name].stride[1] * bytes;
-        } else {
-          Block<SOA_Layout> block;
-          if (columns[i][0] > 0)
-            block = Block<SOA_Layout>(nElements_, ptr, columns[i], types[i], bytes);
-          else
-            block = Block<SOA_Layout>(nElements_, ptr, types[i], bytes);
-
-          skip += columns[i][0] * block.stride[1] * bytes;
-        }
-      }
-    }
-
-    SoAMetadata(int nElements_,
-                std::byte* ptr,
-                const std::vector<torch::ScalarType>& types,
-                const std::vector<Columns>& columns,
-                std::vector<int>&& order_)
-        : SoAMetadata(nElements_, ptr, types, columns, order_) {}
-
-    SoAMetadata(int nElements_,
-                std::byte* ptr,
-                const std::vector<torch::ScalarType>& types,
-                const std::vector<Columns>& columns)
-        : SoAMetadata(nElements_, ptr, types, columns, standard_order(types.size())) {}
-
-    // Constructor for defining single block inline
-    SoAMetadata(int nElements_, void* ptr, const torch::ScalarType types, const Columns& columns) : nElements(nElements_), nBlocks(1) {
-      size_t bytes = torch::elementSize(types);
-      blocks.try_emplace("0", nElements, ptr, columns, types, bytes);
-      order.push_back("0");
-    }
-
+    
     // TODO: Check columns are contiguous
     template <typename T, typename... Others>
       requires (SameTypes<typename T::ValueType, typename Others::ValueType...> && T::columnType == SoAColumnType::eigen)
@@ -232,7 +174,6 @@ namespace torch_alpaka {
       nBlocks += 1;
     }
 
-    // No column value indicates a scalar column, as they can't be stacked.
     template <SoAColumnType col_type, typename T>
       requires (std::is_arithmetic_v<T> && col_type == SoAColumnType::scalar)
     void append_block(const std::string& name, SoAParametersImpl<col_type, T> column) {

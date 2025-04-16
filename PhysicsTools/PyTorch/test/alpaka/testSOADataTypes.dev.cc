@@ -33,7 +33,6 @@ using namespace ::torch_alpaka;
 class testSOADataTypes : public CppUnit::TestFixture {
   CPPUNIT_TEST_SUITE(testSOADataTypes);
   CPPUNIT_TEST(testInterfaceVerbose);
-  CPPUNIT_TEST(testInterfaceSlim);
   CPPUNIT_TEST(testMultiOutput);
   CPPUNIT_TEST(testSingleElement);
   CPPUNIT_TEST(testNoElement);
@@ -43,7 +42,6 @@ class testSOADataTypes : public CppUnit::TestFixture {
  public:
   void testInterfaceVerbose();
   void testIncorrectMetadata();
-  void testInterfaceSlim();
   void testMultiOutput();
   void testSingleElement();
   void testNoElement();
@@ -253,17 +251,17 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
     // Create and fill needed portable collections
     PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
-    SoAMetaRecords cols = deviceCollection.view().records();
+    SoAMetaRecords records = deviceCollection.view().records();
 
     SoAMetadata<SoA> input(batch_size);
-    input.append_block("vector", cols.a(), cols.b());
-    input.append_block("matrix", cols.c());
-    input.append_block("column", cols.x(), cols.y(), cols.z());
-    input.append_block("scalar", cols.type());
+    input.append_block("vector", records.a(), records.b());
+    input.append_block("matrix", records.c());
+    input.append_block("column", records.x(), records.y(), records.z());
+    input.append_block("scalar", records.type());
     input.change_order({"column", "scalar", "matrix", "vector"});
 
     SoAMetadata<SoA> output(batch_size);
-    output.append_block("result", cols.v());
+    output.append_block("result", records.v());
     ModelMetadata metadata(input, output);
 
     alpaka::wait(queue);
@@ -272,51 +270,6 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
     // Check if tensor list built correctly
     check(queue, deviceCollection, tensors);
   };
-
-  void testSOADataTypes::testInterfaceSlim() {
-    Platform platform;
-    std::vector<Device> alpakaDevices = alpaka::getDevs(platform);
-    const auto& alpakaHost = alpaka::getDevByIdx(alpaka_common::PlatformHost(), 0u);
-    CPPUNIT_ASSERT(alpakaDevices.size());
-    const auto& alpakaDevice = alpakaDevices[0];
-    Queue queue{alpakaDevice};
-    torch::Device torchDevice(kTorchDeviceType);
-
-    // Large batch size, so multiple bunches needed
-    const std::size_t batch_size = 325;
-
-    // Create and fill needed portable collections
-    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
-    auto view = deviceCollection.view();
-
-    // Short way of initializeing metadata
-    SoAMetadata<SoA> input(batch_size,
-                           deviceCollection.buffer().data(),
-                           {Double, Float, Double, Float, Int},
-                           {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0},
-                           {3, 2, 0, 1, -1});
-    SoAMetadata<SoA> output(batch_size, view.v(), Double, 2);
-    ModelMetadata metadata(input, output);
-
-    // Fill after definition of metadata, without issues
-    fill(queue, deviceCollection);
-    alpaka::wait(queue);
-    std::vector<torch::IValue> tensors = Converter::convert_input(metadata, torchDevice);
-
-  // Check if tensor list built correctly
-  check(queue, deviceCollection, tensors);
-
-    input = SoAMetadata<SoA>(batch_size,
-          deviceCollection.buffer().data(),
-          {Double, Float, Double, Float, Int},
-          {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0});
-    metadata = ModelMetadata(input, output);
-
-    tensors = Converter::convert_input(metadata, torchDevice);
-
-    // Check if tensor list built correctly
-    check_not_ordered(queue, deviceCollection, tensors);
-};
 
   void testSOADataTypes::testMultiOutput() {
     Platform platform;
@@ -334,14 +287,14 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
     PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
 
-    auto view = deviceCollection.view().records();
+    auto records = deviceCollection.view().records();
     SoAMetadata<SoA> input(batch_size);
-    input.append_block("x", view.x());
-    input.append_block("y", view.y());
+    input.append_block("x", records.x());
+    input.append_block("y", records.y());
 
     SoAMetadata<SoA> output(batch_size);
-    output.append_block("v", view.v());
-    output.append_block("w", view.w());
+    output.append_block("v", records.v());
+    output.append_block("w", records.w());
     ModelMetadata metadata(input, output);
 
     alpaka::wait(queue);
@@ -365,10 +318,18 @@ void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
     const std::size_t batch_size = 1;
     PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
+    SoAMetaRecords records = deviceCollection.view().records();
   
     // Run Converter for single tensor
-    SoAMetadata<SoA> input(batch_size, deviceCollection.buffer().data(), {Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
-    SoAMetadata<SoA> output(batch_size, deviceCollection.buffer().data(), Double, 3);
+    SoAMetadata<SoA> input(batch_size);
+    input.append_block("vector", records.a(), records.b());
+    input.append_block("matrix", records.c());
+    input.append_block("column", records.x(), records.y(), records.z());
+    input.append_block("scalar", records.type());
+    input.change_order({"column", "scalar", "matrix", "vector"});
+
+    SoAMetadata<SoA> output(batch_size);
+    output.append_block("result", records.v());
     ModelMetadata metadata(input, output);
   
     alpaka::wait(queue);
@@ -390,10 +351,18 @@ void testSOADataTypes::testNoElement() {
   //Create empty portable collection
   const std::size_t batch_size = 0;
   PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
+  SoAMetaRecords records = deviceCollection.view().records();
 
   // Run Converter
-  SoAMetadata<SoA> input(batch_size, deviceCollection.buffer().data(), {Double, Float, Double, Float, Int}, {{{2, 3}}, {{1, 2, 2}}, 3, 0, 0}, {3, 2, 0, 1, -1});
-  SoAMetadata<SoA> output(batch_size, deviceCollection.buffer().data(), Double, 3);
+  SoAMetadata<SoA> input(batch_size);
+  input.append_block("vector", records.a(), records.b());
+  input.append_block("matrix", records.c());
+  input.append_block("column", records.x(), records.y(), records.z());
+  input.append_block("scalar", records.type());
+  input.change_order({"column", "scalar", "matrix", "vector"});
+
+  SoAMetadata<SoA> output(batch_size);
+  output.append_block("result", records.v());
   ModelMetadata metadata(input, output);
 
   alpaka::wait(queue);

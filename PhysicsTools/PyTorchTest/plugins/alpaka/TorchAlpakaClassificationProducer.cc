@@ -74,10 +74,13 @@ void TorchAlpakaClassificationProducer::produce(device::Event &event, const devi
 
   // metadata for automatic tensor conversion
   std::cout << "(Classification::metadata) chash=" << torch_alpaka::tools::current_stream_hash(event.queue()) << std::endl;
-  torch_alpaka::SoAMetadata<torchportable::ParticleSoA> input_metadata(
-    batch_size, inputs.buffer().data(), torch_alpaka::Float, 3);
-  torch_alpaka::SoAMetadata<torchportable::ClassificationSoA> output_metadata(
-    batch_size, outputs.buffer().data(), torch_alpaka::Float, 2);
+  auto records = inputs.view().records();
+  torch_alpaka::SoAMetadata<torchportable::ParticleSoA> input_metadata(batch_size);
+  input_metadata.append_block("particles", records.pt(), records.eta(), records.phi());
+
+  auto output_records = outputs.view().records();
+  torch_alpaka::SoAMetadata<torchportable::ClassificationSoA> output_metadata(batch_size);
+  output_metadata.append_block("particles", output_records.c1(), output_records.c2());
   torch_alpaka::ModelMetadata model_metadata(input_metadata, output_metadata);
 
   // inference
