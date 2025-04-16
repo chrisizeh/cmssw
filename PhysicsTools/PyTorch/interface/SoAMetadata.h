@@ -57,7 +57,7 @@ namespace torch_alpaka {
       size = std::move(create_size(nElements, 1));
     };
 
-    static int get_bytes_per_column(int nElements, size_t bytes) {
+    static int get_elems_per_column(int nElements, size_t bytes) {
       int per_bunch = SOA_Layout::alignment / bytes;
       int bunches = std::ceil(1.0 * nElements / per_bunch);
       return bunches * per_bunch;
@@ -123,17 +123,17 @@ namespace torch_alpaka {
     }
 
     template <typename T, typename... Others>
-    bool check_location(int elements, T column, T other_column, Others... others) {
-      return check_location(elements, other_column, others...) &&  (column.tupleOrPointer() + elements) == other_column.tupleOrPointer();
+    bool check_location(int elements, T* column, T* other_column, Others... others) {
+      return check_location(elements, other_column, others...) &&  (column + elements) == other_column;
     }
 
     template <typename T>
-    bool check_location(int elements, T column, T other_column) {
-      return (column.tupleOrPointer() + elements) == other_column.tupleOrPointer();
+    bool check_location(int elements, T* column, T* other_column) {
+      return (column + elements) == other_column;
     }
 
     template <typename T>
-    bool check_location(int elements, T column) {
+    bool check_location(int elements, T* column) {
       return true;
     }
 
@@ -150,6 +150,9 @@ namespace torch_alpaka {
       requires (SameTypes<typename T::ValueType, typename Others::ValueType...> && T::columnType == SoAColumnType::eigen)
     void append_block(const std::string& name, T column, Others... others) {
       const auto [ptr, stride] = column.tupleOrPointer();
+      
+      int elems = Block<SOA_Layout>::get_elems_per_column(nElements, sizeof(typename T::ScalarType));
+      assert(check_location(elems * T::ValueType::RowsAtCompileTime * T::ValueType::ColsAtCompileTime, ptr, std::get<0>(others.tupleOrPointer())...));
 
       Columns col({sizeof...(others) + 1, T::ValueType::RowsAtCompileTime});
       if (T::ValueType::ColsAtCompileTime > 1)
@@ -166,8 +169,8 @@ namespace torch_alpaka {
     template <typename T, typename... Others>
       requires (SameTypes<typename T::ScalarType, typename Others::ScalarType...> && T::columnType == SoAColumnType::column)
     void append_block(const std::string& name, T column, Others... others) {
-      int bytes = Block<SOA_Layout>::get_bytes_per_column(nElements, sizeof(typename T::ScalarType));
-      assert(check_location(bytes, column, others...));
+      int elems = Block<SOA_Layout>::get_elems_per_column(nElements, sizeof(typename T::ScalarType));
+      assert(check_location(elems, column.tupleOrPointer(), others.tupleOrPointer()...));
 
       blocks.try_emplace(name, nElements, column.tupleOrPointer(), sizeof...(others) + 1, get_type<typename T::ScalarType>(), sizeof(typename T::ScalarType));
       order.push_back(name);
