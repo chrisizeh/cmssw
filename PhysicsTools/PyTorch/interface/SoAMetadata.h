@@ -73,7 +73,6 @@ namespace cms::torch::alpaka {
       size[0] = nElements;
       std::copy(columns.columns.begin(), columns.columns.end(), size.begin() + 1);
 
-      std::cout << "size fine until here" << std::endl;
       return size;
     }
 
@@ -100,7 +99,6 @@ namespace cms::torch::alpaka {
         }
         stride[1] = stride[N - 1] * columns[N - 2];
       }
-      std::cout << "stride fine until here" << std::endl;
       return stride;
     }
   };
