@@ -35,7 +35,7 @@ namespace cms::torch::alpaka {
       std::vector<::torch::IValue> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
         assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % SOA_Input::alignment == 0);
-        tensors[i] = Converter::array_to_tensor<SOA_Input>(device, metadata.input[metadata.input.order[i]]);
+        tensors[i] = Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]);
       }
       return tensors;
     }
@@ -47,7 +47,7 @@ namespace cms::torch::alpaka {
       std::vector<::torch::Tensor> tensors(metadata.input.nBlocks);
       for (int i = 0; i < metadata.input.nBlocks; i++) {
         assert(reinterpret_cast<intptr_t>(metadata.input[metadata.input.order[i]].ptr_) % SOA_Input::alignment == 0);
-        tensors[i] = Converter::array_to_tensor<SOA_Input>(device, metadata.input[metadata.input.order[i]]);
+        tensors[i] = Converter::array_to_tensor(device, metadata.input[metadata.input.order[i]]);
       }
       return tensors;
     }
@@ -72,7 +72,7 @@ namespace cms::torch::alpaka {
         if (tensors[i].isTensor()) {
           assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % SOA_Output::alignment ==
                  0);
-          Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[i]]) =
+          Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) =
               tensors[i].toTensor();
         }
       }
@@ -85,7 +85,7 @@ namespace cms::torch::alpaka {
                                ::torch::Device device) {
       for (int i = 0; i < metadata.output.nBlocks; i++) {
         assert(reinterpret_cast<intptr_t>(metadata.output[metadata.output.order[i]].ptr_) % SOA_Output::alignment == 0);
-        Converter::array_to_tensor<SOA_Output>(device, metadata.output[metadata.output.order[i]]) = tensors[i];
+        Converter::array_to_tensor(device, metadata.output[metadata.output.order[i]]) = tensors[i];
       }
     }
 
