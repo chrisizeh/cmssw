@@ -3,6 +3,7 @@
 
 #include <string>
 #include <torch/torch.h>
+#include <torch/csrc/inductor/aoti_package/model_package_loader.h>
 #include "PhysicsTools/PyTorch/interface/CompilationType.h"
 #include "PhysicsTools/PyTorch/interface/JitLoad.h"
 
@@ -11,6 +12,9 @@ namespace cms::torch {
   template <CompilationType>
   class Model;
 
+  // __________________________________________________________________________________________________________________
+  // Just In Time (JIT)
+
   /**
    * @brief wrapper of torch::jit::script::Module
    * @see: https://docs.pytorch.org/cppdocs/api/classtorch_1_1nn_1_1_module.html#class-module
@@ -18,27 +22,37 @@ namespace cms::torch {
   template <>
   class Model<CompilationType::kJit> {
   public:
-    explicit Model(std::string &model_path)
-        : model_(cms::torch::load(model_path)), 
-          device_(::torch::kCPU) {}
+    explicit Model(std::string &model_path);
+    explicit Model(std::string &model_path, ::torch::Device device);
 
-    explicit Model(std::string &model_path, ::torch::Device device)
-        : model_(cms::torch::load(model_path, device)), 
-          device_(device) {}    
-
-    void to(::torch::Device device, bool non_blocking = false) {
-      model_.to(device, false);
-      device_ = device;
-    }
-
-    auto forward(std::vector<::torch::IValue> &inputs) {
-      return model_.forward(inputs).toTensor();
-    }
-
-    ::torch::Device device() const { return device_; }
+    void to(::torch::Device device, bool non_blocking = false);
+    ::torch::IValue forward(std::vector<::torch::IValue> &inputs);
+    ::torch::Device device() const;
 
   private:
     ::torch::jit::script::Module model_;
+    ::torch::Device device_;
+  };
+
+  // __________________________________________________________________________________________________________________
+  // Ahead of Time (AOT)
+
+  using AOTPkgLoader = ::torch::inductor::AOTIModelPackageLoader;
+
+  /**
+   * @brief wrapper of torch::jit::script::Module
+   * @see: https://docs.pytorch.org/cppdocs/api/classtorch_1_1nn_1_1_module.html#class-module
+   */
+  template <>
+  class Model<CompilationType::kAot> {
+  public:
+    explicit Model(std::string &precompiled_lib_path);
+
+    std::vector<at::Tensor> forward(std::vector<at::Tensor> &inputs, void* stream_handle = nullptr);
+    ::torch::Device device();
+
+  private:
+    AOTPkgLoader pkg_loader_;
     ::torch::Device device_;
   };
 

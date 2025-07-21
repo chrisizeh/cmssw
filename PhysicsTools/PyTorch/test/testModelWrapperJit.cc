@@ -106,8 +106,8 @@ namespace torchtest {
     auto m = ModelJit(m_path);
     auto inputs = std::vector<torch::IValue>();
     inputs.push_back(torch::randn({batch_size_, 3}));
-    auto out1 = m.forward(inputs);
-    auto out2 = m.forward(inputs);
+    auto out1 = m.forward(inputs).toTensor();
+    auto out2 = m.forward(inputs).toTensor();
     CPPUNIT_ASSERT(out1.equal(out2));
   }
 
@@ -121,7 +121,7 @@ namespace torchtest {
     auto m = ModelJit(m_path, dev);
     auto inputs = std::vector<torch::IValue>();
     inputs.push_back(torch::randn({batch_size_, 3}, dev));
-    auto out = m.forward(inputs);
+    auto out = m.forward(inputs).toTensor();
     CPPUNIT_ASSERT_EQUAL(dev, out.device());
   }
 

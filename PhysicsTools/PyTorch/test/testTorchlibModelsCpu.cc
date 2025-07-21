@@ -6,6 +6,7 @@
 namespace torchtest {
 
   class TestTorchlibModelsCpu : public CppUnit::TestFixture {
+  private:
     CPPUNIT_TEST_SUITE(TestTorchlibModelsCpu);
     CPPUNIT_TEST(testClassificationCpu);
     CPPUNIT_TEST(testRegressionCpu);
