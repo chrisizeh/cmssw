@@ -19,7 +19,6 @@ namespace torchtest {
 
     const int64_t batch_size_ = 2 << 10;
     const torch::Device device_ = torch::Device(torch::kCPU, 0);
-
   };
 
   CPPUNIT_TEST_SUITE_REGISTRATION(TestTorchlibModelsCpu);
@@ -29,7 +28,7 @@ namespace torchtest {
 
     auto inputs = torch::ones({batch_size_, 3}, device_);
     auto outputs = model.forward(inputs);
-    
+
     CPPUNIT_ASSERT(torch::allclose(outputs, torch::full_like(outputs, 0.5f)));
   }
 

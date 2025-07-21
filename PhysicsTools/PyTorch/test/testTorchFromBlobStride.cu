@@ -13,49 +13,49 @@
 
 namespace torchtest {
 
-/*
+  /*
  * Demonstration of using stride in torch::from_blob to load SOA input 
  */
-template <typename T, std::size_t N>
-torch::Tensor array_to_tensor(torch::Device device, T* arr, const long int* size) {
-  long int arr_size[N];
-  long int arr_stride[N];
-  std::copy(size, size + N, arr_size);
-  std::copy(size, size + N, arr_stride);
+  template <typename T, std::size_t N>
+  torch::Tensor array_to_tensor(torch::Device device, T* arr, const long int* size) {
+    long int arr_size[N];
+    long int arr_stride[N];
+    std::copy(size, size + N, arr_size);
+    std::copy(size, size + N, arr_stride);
 
-  std::shift_right(std::begin(arr_stride), std::end(arr_stride), 1);
-  arr_stride[0] = 1;
-  arr_stride[N - 1] *= arr_stride[N - 2];
+    std::shift_right(std::begin(arr_stride), std::end(arr_stride), 1);
+    arr_stride[0] = 1;
+    arr_stride[N - 1] *= arr_stride[N - 2];
 
-  // Create Torch DType based on https://discuss.pytorch.org/t/mapping-a-template-type-to-a-scalartype/53174
-  auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
-  torch::Tensor tensor = torch::from_blob(arr, arr_size, arr_stride, options);
+    // Create Torch DType based on https://discuss.pytorch.org/t/mapping-a-template-type-to-a-scalartype/53174
+    auto options = torch::TensorOptions().dtype(torch::CppTypeToScalarType<T>()).device(device).pinned_memory(true);
+    torch::Tensor tensor = torch::from_blob(arr, arr_size, arr_stride, options);
 
-  return tensor;
-}
+    return tensor;
+  }
 
-template <typename T, std::size_t N>
-void print_column_major(T* arr, const long int* size) {
-  if (N == 2) {
-    for (int i = 0; i < size[0]; i++) {
-      for (int j = 0; j < size[1]; j++) {
-        std::cout << arr[i + j * size[0]] << " ";
-      }
-      std::cout << std::endl;
-    }
-  } else if (N == 3) {
-    for (int i = 0; i < size[0]; i++) {
-      std::cout << "(" << i << ", .., ..)" << std::endl;
-      for (int j = 0; j < size[1]; j++) {
-        for (int k = 0; k < size[2]; k++) {
-          std::cout << arr[i + j * size[0] + k * size[0] * size[1]] << " ";
+  template <typename T, std::size_t N>
+  void print_column_major(T* arr, const long int* size) {
+    if (N == 2) {
+      for (int i = 0; i < size[0]; i++) {
+        for (int j = 0; j < size[1]; j++) {
+          std::cout << arr[i + j * size[0]] << " ";
         }
         std::cout << std::endl;
       }
-      std::cout << std::endl;
+    } else if (N == 3) {
+      for (int i = 0; i < size[0]; i++) {
+        std::cout << "(" << i << ", .., ..)" << std::endl;
+        for (int j = 0; j < size[1]; j++) {
+          for (int k = 0; k < size[2]; k++) {
+            std::cout << arr[i + j * size[0] + k * size[0] * size[1]] << " ";
+          }
+          std::cout << std::endl;
+        }
+        std::cout << std::endl;
+      }
     }
   }
-}
 
 }  // namespace torchtest
 
@@ -139,4 +139,3 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
-

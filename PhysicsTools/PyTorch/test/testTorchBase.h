@@ -55,7 +55,7 @@ namespace torchtest {
 
     const std::string buildCmd() const {
       return apptainer_cmd_ + " " + torchtest::cmsswPath("") + " " + image_ + " " + python_exe_ + " " + test_path_ +
-            script() + " " + model_path_;
+             script() + " " + model_path_;
     }
   };
 

@@ -1,10 +1,24 @@
 <bin name="testJitLoad" file="testJitLoad.cc testRunner.cc">
   <use name="boost_filesystem"/>
   <use name="cppunit"/>
+  <use name="cuda"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
   <use name="PhysicsTools/PyTorch"/>
 </bin>
 
-<bin name="testJitLoadToDeviceDirect" file="testJitLoadToDeviceDirect.cc testRunner.cc">
+<bin name="testModelWrapperJit" file="testModelWrapperJit.cc testRunner.cc">
+  <use name="boost_filesystem"/>
+  <use name="cppunit"/>
+  <use name="cuda"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
+  <use name="PhysicsTools/PyTorch"/>
+</bin>
+
+<bin name="testTorchAsyncExecutionModel" file="testTorchAsyncExecutionModel.cc testRunner.cc">
   <use name="boost_filesystem"/>
   <use name="cppunit"/>
   <use name="cuda"/>

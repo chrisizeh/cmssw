@@ -12,17 +12,17 @@
 
 namespace torchtest {
 
-__global__ void vector_add_kernel(int* a, int* b, int* c, int N) {
-  int t_id = (blockDim.x * blockIdx.x) + threadIdx.x;
-  if (t_id < N) {
-    c[t_id] = a[t_id] + b[t_id];
+  __global__ void vector_add_kernel(int* a, int* b, int* c, int N) {
+    int t_id = (blockDim.x * blockIdx.x) + threadIdx.x;
+    if (t_id < N) {
+      c[t_id] = a[t_id] + b[t_id];
+    }
   }
-}
 
-void vector_add(int* a, int* b, int* c, int N, int cuda_grid_size, int cuda_block_size) {
-  vector_add_kernel<<<cuda_grid_size, cuda_block_size>>>(a, b, c, N);
-  cudaGetLastError();
-}
+  void vector_add(int* a, int* b, int* c, int N, int cuda_grid_size, int cuda_block_size) {
+    vector_add_kernel<<<cuda_grid_size, cuda_block_size>>>(a, b, c, N);
+    cudaGetLastError();
+  }
 
 }  // namespace torchtest
 
