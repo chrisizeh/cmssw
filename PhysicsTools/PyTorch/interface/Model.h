@@ -4,13 +4,9 @@
 #include <string>
 #include <torch/torch.h>
 #include <torch/csrc/inductor/aoti_package/model_package_loader.h>
-#include "PhysicsTools/PyTorch/interface/CompilationType.h"
 #include "PhysicsTools/PyTorch/interface/JitLoad.h"
 
 namespace cms::torch {
-
-  template <CompilationType>
-  class Model;
 
   // __________________________________________________________________________________________________________________
   // Just In Time (JIT)
@@ -19,11 +15,10 @@ namespace cms::torch {
    * @brief wrapper of torch::jit::script::Module
    * @see: https://docs.pytorch.org/cppdocs/api/classtorch_1_1nn_1_1_module.html#class-module
    */
-  template <>
-  class Model<CompilationType::kJit> {
+  class ModelJit {
   public:
-    explicit Model(std::string &model_path);
-    explicit Model(std::string &model_path, ::torch::Device device);
+    explicit ModelJit(std::string &model_path);
+    explicit ModelJit(std::string &model_path, ::torch::Device device);
 
     void to(::torch::Device device, bool non_blocking = false);
     ::torch::IValue forward(std::vector<::torch::IValue> &inputs);
@@ -46,10 +41,9 @@ namespace cms::torch {
    *        Backward compatibility may be required to support multiple PyTorch versions within CMSSW.
    * @see: https://github.com/pytorch/pytorch/blob/v2.6.0/torch/csrc/inductor/aoti_package/model_package_loader.h#L8
    */
-  template <>
-  class Model<CompilationType::kAot> {
+  class ModelAot {
   public:
-    explicit Model(std::string &precompiled_lib_path);
+    explicit ModelAot(std::string &precompiled_lib_path);
 
     std::vector<at::Tensor> forward(std::vector<at::Tensor> &inputs, void *stream_handle = nullptr);
     ::torch::Device device();

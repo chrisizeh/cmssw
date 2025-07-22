@@ -9,8 +9,6 @@ namespace torchtest {
 
   using namespace cms::torch;
 
-  using ModelJit = Model<CompilationType::kJit>;
-
   class TestModelWrapperJit : public testTorchBase {
   public:
     std::string script() const override;

@@ -11,8 +11,6 @@ namespace torchtest {
 
   using namespace cms::torch;
 
-  using ModelAot = Model<CompilationType::kAot>;
-
   class TestModelWrapperAot : public CppUnit::TestFixture {
   public:
     void testCpu();
