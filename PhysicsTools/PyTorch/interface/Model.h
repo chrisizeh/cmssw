@@ -40,15 +40,18 @@ namespace cms::torch {
   using AOTPkgLoader = ::torch::inductor::AOTIModelPackageLoader;
 
   /**
-   * @brief wrapper of torch::jit::script::Module
-   * @see: https://docs.pytorch.org/cppdocs/api/classtorch_1_1nn_1_1_module.html#class-module
+   * @brief wrapper of AOTIModelPackageLoader
+   * @note: Following torchlib APIs are subject to change due to active development. 
+   *        Authors provide NO BC guarantee for these APIs.
+   *        Backward compatibility may be required to support multiple PyTorch versions within CMSSW.
+   * @see: https://github.com/pytorch/pytorch/blob/v2.6.0/torch/csrc/inductor/aoti_package/model_package_loader.h#L8
    */
   template <>
   class Model<CompilationType::kAot> {
   public:
     explicit Model(std::string &precompiled_lib_path);
 
-    std::vector<at::Tensor> forward(std::vector<at::Tensor> &inputs, void* stream_handle = nullptr);
+    std::vector<at::Tensor> forward(std::vector<at::Tensor> &inputs, void *stream_handle = nullptr);
     ::torch::Device device();
 
   private:

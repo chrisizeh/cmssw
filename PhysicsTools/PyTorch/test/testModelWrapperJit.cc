@@ -1,8 +1,9 @@
+#include <cuda_runtime.h>
+#include <c10/cuda/CUDAStream.h>
 #include "PhysicsTools/PyTorch/interface/Model.h"
 #include "PhysicsTools/PyTorch/test/NvtxScopedRange.h"
 #include "PhysicsTools/PyTorch/test/testTorchBase.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/requireDevices.h"
-
 
 namespace torchtest {
 
@@ -17,26 +18,22 @@ namespace torchtest {
     void testCtor_DefaultDeviceIsCpu();
     void testCtor_ExplicitDeviceIsHonored();
     void testCtor_BadModelPathThrows();
-
     void testToDevice_UpdatesUnderlyingState();
     void testToDevice_NonBlocking();
-
     void testForward_IdempotentOutput();
     void testForward_OutputOnCorrectDevice();
+    void testAsyncExecution();
 
   private:
     CPPUNIT_TEST_SUITE(TestModelWrapperJit);
-
     CPPUNIT_TEST(testCtor_DefaultDeviceIsCpu);
     CPPUNIT_TEST(testCtor_ExplicitDeviceIsHonored);
     CPPUNIT_TEST(testCtor_BadModelPathThrows);
-
     CPPUNIT_TEST(testToDevice_UpdatesUnderlyingState);
     CPPUNIT_TEST(testToDevice_NonBlocking);
-
     CPPUNIT_TEST(testForward_IdempotentOutput);
     CPPUNIT_TEST(testForward_OutputOnCorrectDevice);
-
+    CPPUNIT_TEST(testAsyncExecution);
     CPPUNIT_TEST_SUITE_END();
 
     const int64_t batch_size_ = 2 << 10;
@@ -100,7 +97,7 @@ namespace torchtest {
 
     CPPUNIT_ASSERT_EQUAL(dev, m.device());
   }
-  
+
   void TestModelWrapperJit::testForward_IdempotentOutput() {
     auto m_path = modelPath() + "/linear_dnn.pt";
     auto m = ModelJit(m_path);
@@ -114,7 +111,7 @@ namespace torchtest {
   void TestModelWrapperJit::testForward_OutputOnCorrectDevice() {
     // disable test on non-CUDA devices
     if (!cms::cudatest::testDevices())
-     return;
+      return;
 
     auto m_path = modelPath() + "/linear_dnn.pt";
     auto dev = ::torch::Device(::torch::kCUDA, 0);
@@ -123,6 +120,49 @@ namespace torchtest {
     inputs.push_back(torch::randn({batch_size_, 3}, dev));
     auto out = m.forward(inputs).toTensor();
     CPPUNIT_ASSERT_EQUAL(dev, out.device());
+  }
+
+  void TestModelWrapperJit::testAsyncExecution() {
+    // disable test on non-CUDA devices
+    if (!cms::cudatest::testDevices())
+      return;
+
+    cudaStream_t stream;
+    cudaError_t err = cudaStreamCreate(&stream);
+    if (err != cudaSuccess)
+      CPPUNIT_FAIL("cudaStreamCreate failed");
+
+    auto m_path = modelPath() + "/linear_dnn.pt";
+    auto dev = ::torch::Device(::torch::kCUDA, 0);
+
+    // set torch stream from external
+    auto default_stream = c10::cuda::getCurrentCUDAStream();
+    auto torch_stream = c10::cuda::getStreamFromExternal(stream, dev.index());
+    c10::cuda::setCurrentCUDAStream(torch_stream);
+
+    // async model load and inference check
+    NvtxScopedRange range("testAsyncExecutionModel");
+    NvtxScopedRange mload("modelLoad");
+    auto m = ModelJit(m_path);
+    m.to(dev, true);
+    mload.end();
+
+    NvtxScopedRange inbuf("inputBuffers");
+    auto inputs = std::vector<torch::IValue>();
+    inputs.push_back(torch::randn({batch_size_, 3}, dev));
+    inbuf.end();
+
+    for (uint32_t i = 0; i < 10; ++i) {
+      NvtxScopedRange iter(("forwardPass:" + std::to_string(i)).c_str());
+      auto out = m.forward(inputs);
+      iter.end();
+    }
+    range.end();
+
+    // restore the default stream
+    c10::cuda::setCurrentCUDAStream(default_stream);
+    cudaStreamSynchronize(stream);
+    cudaStreamDestroy(stream);
   }
 
 }  // namespace torchtest

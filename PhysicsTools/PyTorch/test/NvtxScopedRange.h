@@ -7,9 +7,7 @@ namespace torchtest {
 
   class NvtxScopedRange {
   public:
-    explicit NvtxScopedRange(const char* msg) {
-      id_ = nvtxRangeStartA(msg);
-    }
+    explicit NvtxScopedRange(const char* msg) { id_ = nvtxRangeStartA(msg); }
 
     void end() {
       if (active_) {
