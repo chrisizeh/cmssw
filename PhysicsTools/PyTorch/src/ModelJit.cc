@@ -18,7 +18,7 @@ namespace cms::torch {
   /**
    * Move model to specified device memory space
    * @param device Device to move model to
-   * @param non_blocking Asynchronous load (in default stream if not set)
+   * @param non_blocking Asynchronous load (in default stream if not overridden by the caller)
    */
   void ModelJit::to(::torch::Device device, bool non_blocking) {
     model_.to(device, non_blocking);
