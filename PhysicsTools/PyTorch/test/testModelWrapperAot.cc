@@ -2,7 +2,7 @@
 #include <c10/cuda/CUDAStream.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "PhysicsTools/PyTorch/interface/Model.h"
+#include "PhysicsTools/PyTorch/interface/ModelAot.h"
 #include "PhysicsTools/PyTorch/test/NvtxScopedRange.h"
 #include "PhysicsTools/PyTorch/test/testUtilities.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/requireDevices.h"

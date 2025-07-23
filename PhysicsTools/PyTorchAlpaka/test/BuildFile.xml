@@ -1,0 +1,11 @@
+<bin file="alpaka/testModelWrapperJitAlpaka.cc testRunner.cc" name="testModelWrapperJitAlpaka">
+  <use name="boost_filesystem"/>
+  <use name="cppunit"/>
+  <use name="cuda"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
+  <use name="PhysicsTools/PyTorch"/>
+  <use name="PhysicsTools/PyTorchAlpaka"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
+</bin>

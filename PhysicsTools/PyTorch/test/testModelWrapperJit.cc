@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 #include <c10/cuda/CUDAStream.h>
-#include "PhysicsTools/PyTorch/interface/Model.h"
+#include "PhysicsTools/PyTorch/interface/ModelJit.h"
 #include "PhysicsTools/PyTorch/test/NvtxScopedRange.h"
 #include "PhysicsTools/PyTorch/test/testTorchBase.h"
 #include "HeterogeneousCore/CUDAUtilities/interface/requireDevices.h"
