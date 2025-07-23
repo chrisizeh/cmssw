@@ -106,7 +106,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
 
   void TestModelWrapperJitAlpaka::testAsyncExecution() {
     torchtest::NvtxScopedRange range("testAsyncExecutionModel");
-  
+
     // setup alpaka queue
     const auto& devices = cms::alpakatools::devices<Platform>();
     CPPUNIT_ASSERT(!devices.empty());
@@ -124,7 +124,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
     inbuf.end();
 
     cacheStream();
-    
+
     // guard scope, restores when goes out of scope
     // all operations should be scheduled on provided queue.
     {
@@ -150,10 +150,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
     // operations should be restored and scheduled on default stream
     torchtest::NvtxScopedRange exec2("execInDefaultStream");
     for (uint32_t i = 0; i < 10; ++i) {
-        torchtest::NvtxScopedRange iter(("forwardPass:" + std::to_string(i)).c_str());
-        auto out = m.forward(inputs);
-        iter.end();
-      }
+      torchtest::NvtxScopedRange iter(("forwardPass:" + std::to_string(i)).c_str());
+      auto out = m.forward(inputs);
+      iter.end();
+    }
     exec2.end();
 
     range.end();

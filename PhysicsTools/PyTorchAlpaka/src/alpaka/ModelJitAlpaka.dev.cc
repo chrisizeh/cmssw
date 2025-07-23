@@ -5,8 +5,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
   /**
    * Ctor, loads model to Cpu memory
    */
-  ModelJitAlpaka::ModelJitAlpaka(std::string &model_path)
-      : cms::torch::ModelJit(model_path) {}
+  ModelJitAlpaka::ModelJitAlpaka(std::string &model_path) : cms::torch::ModelJit(model_path) {}
 
   /**
    * Ctor, loads model to specified device from alpaka::Device
@@ -27,7 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
   void ModelJitAlpaka::to(const Device &dev, bool non_blocking) {
     ModelJit::to(alpakatools::device(dev), non_blocking);
   }
-  
+
   void ModelJitAlpaka::to(const Queue &queue, bool non_blocking) {
     ModelJit::to(alpakatools::device(queue), non_blocking);
   }

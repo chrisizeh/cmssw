@@ -15,24 +15,30 @@ namespace cms::torch::alpaka {
   template <typename TQueue>
   class FwkGuard {
   public:
-    explicit FwkGuard(const TQueue &queue) : queue_(queue) {
-      FwkGuardTraits<TQueue>::set(queue_);
-    }
+    explicit FwkGuard(const TQueue &queue) : queue_(queue) { FwkGuardTraits<TQueue>::set(queue_); }
 
-    ~FwkGuard() {
-      FwkGuardTraits<TQueue>::reset();
-    }
+    ~FwkGuard() { FwkGuardTraits<TQueue>::reset(); }
 
   private:
     const TQueue &queue_;
   };
-\
 
 #ifdef ALPAKA_ACC_GPU_CUDA_ENABLED
 
   template <>
   struct FwkGuardTraits<alpaka_cuda_async::Queue> {
-    static void set(const alpaka_cuda_async::Queue &queue) {
+    /**
+     * setCurrentCUDAStream() is assumed to not throw exceptions on the later-than-first calls.
+     * Internal torch implementation of CUDA stream handling is based on a `thread_local`
+     * @see: https://github.com/pytorch/pytorch/blob/v2.6.0/c10/cuda/CUDAStream.cpp#L169
+     * follows the semantics of "current device" of CUDA itself (but not of Alpaka)
+     * 
+     * @see: https://github.com/pytorch/pytorch/blob/v2.6.0/c10/cuda/CUDAStream.cpp#L373
+     * 
+     * TODO: `noexcept` is used to avoid exceptions in the destructor, which for 100% clarity
+     * restore the previous state (but currently not required for correctness).
+     */
+    static void set(const alpaka_cuda_async::Queue &queue) noexcept {
       auto dev = ALPAKA_ACCELERATOR_NAMESPACE::torch::alpakatools::device(queue);
       auto stream = c10::cuda::getStreamFromExternal(queue.getNativeHandle(), dev.index());
       c10::cuda::setCurrentCUDAStream(stream);
@@ -61,8 +67,7 @@ namespace cms::torch::alpaka {
 #error "TorchAlpaka guard for this backend is not defined."
 #endif
 
-}  // namespace cms::torch
-
+}  // namespace cms::torch::alpaka
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
 

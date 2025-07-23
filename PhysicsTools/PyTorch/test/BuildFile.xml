@@ -50,7 +50,7 @@
 </bin>
 </iftool>
 
-<bin name="testModelWrapperAot" file="testModelWrapperAot.cc testRunner.cc">
+<!-- <bin name="testModelWrapperAot" file="testModelWrapperAot.cc testRunner.cc">
   <use name="boost_filesystem"/>
   <use name="cppunit"/>
   <use name="cuda"/>
@@ -58,7 +58,7 @@
   <use name="pytorch-cuda"/>
   <use name="HeterogeneousCore/CUDAUtilities"/>
   <use name="PhysicsTools/PyTorch"/>
-</bin>
+</bin> -->
 
 <bin name="testModelWrapperJit" file="testModelWrapperJit.cc testRunner.cc">
   <use name="boost_filesystem"/>

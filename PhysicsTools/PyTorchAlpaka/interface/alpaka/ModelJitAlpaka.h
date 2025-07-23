@@ -17,8 +17,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
     explicit ModelJitAlpaka(std::string &model_path, const Device &dev);
     explicit ModelJitAlpaka(std::string &model_path, const Queue &queue);
 
-    void to(const Device& dev, bool non_blocking = false);
-    void to(const Queue& queue, bool non_blocking = false);
+    void to(const Device &dev, bool non_blocking = false);
+    void to(const Queue &queue, bool non_blocking = false);
   };
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torch
