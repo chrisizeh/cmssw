@@ -22,10 +22,18 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
 
   namespace alpakatools {
 
-    inline ::torch::Device device(const Device &dev) { return ::torch::Device(kDevice, dev.getNativeHandle()); }
+    inline ::torch::Device device(const Device &dev) { 
+	if (kDevice != c10::DeviceType::CPU)
+	    return ::torch::Device(kDevice, dev.getNativeHandle()); 
+	else
+	    return ::torch::Device(kDevice); 
+    }
 
     inline ::torch::Device device(const Queue &queue) {
-      return ::torch::Device(kDevice, ::alpaka::getDev(queue).getNativeHandle());
+	if (kDevice != c10::DeviceType::CPU)
+	      return ::torch::Device(kDevice, ::alpaka::getDev(queue).getNativeHandle());
+	else
+	    return ::torch::Device(kDevice); 
     }
 
   }  // namespace alpakatools

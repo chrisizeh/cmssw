@@ -4,6 +4,7 @@
 #include <string>
 #include <torch/torch.h>
 #include "PhysicsTools/PyTorch/interface/JitLoad.h"
+#include "PhysicsTools/PyTorch/interface/Converter.h"
 
 namespace cms::torch {
 
@@ -17,7 +18,20 @@ namespace cms::torch {
     explicit ModelJit(std::string &model_path, ::torch::Device device);
 
     void to(::torch::Device device, bool non_blocking = false);
+
     ::torch::IValue forward(std::vector<::torch::IValue> &inputs);
+
+  /**
+   * Torch portable inference with SoA buffers without explicit copies.
+   * @param metadata Metadata specyfies how memory blob is organized and can be accessed.
+   */
+  template <typename InMemLayout, typename OutMemLayout>
+  void forward(const ModelMetadata<InMemLayout, OutMemLayout> &metadata) {
+    auto input_tensor = Converter::convert_input(metadata, device_);
+    // TODO: think about support for multi-output models (without temporary mem copy)
+    Converter::convert_output(metadata, device_) = model_.forward(input_tensor).toTensor();
+  }
+
     ::torch::Device device() const;
 
   protected:

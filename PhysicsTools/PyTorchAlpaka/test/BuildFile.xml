@@ -9,3 +9,25 @@
   <use name="PhysicsTools/PyTorchAlpaka"/>
   <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
+<bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch">
+  <use name="boost_filesystem"/>
+  <use name="cppunit"/>
+  <use name="cuda"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
+  <use name="PhysicsTools/PyTorch"/>
+  <use name="PhysicsTools/PyTorchAlpaka"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
+</bin>
+<bin file="alpaka/testSOADatatypes.dev.cc" name="testSOADatatypes">
+  <use name="boost_filesystem"/>
+  <use name="cppunit"/>
+  <use name="cuda"/>
+  <use name="pytorch"/>
+  <use name="pytorch-cuda"/>
+  <use name="HeterogeneousCore/CUDAUtilities"/>
+  <use name="PhysicsTools/PyTorch"/>
+  <use name="PhysicsTools/PyTorchAlpaka"/>
+  <flags ALPAKA_BACKENDS="serial cuda"/>
+</bin>
