@@ -69,3 +69,8 @@
   <use name="HeterogeneousCore/CUDAUtilities"/>
   <use name="PhysicsTools/PyTorch"/>
 </bin>
+<bin name="testSOADatatypes" file="testSOADatatypes.cc testRunner.cc">
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+  <use name="PhysicsTools/PyTorch"/>
+</bin>

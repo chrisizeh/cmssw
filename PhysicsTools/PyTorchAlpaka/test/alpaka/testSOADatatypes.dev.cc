@@ -26,7 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
   using namespace ::cms::torch;
 
   class TestSOADataTypes : public CppUnit::TestFixture {
-    CPPUNIT_TEST_SUITE(TestSOADataTypes);
+    CPPUNIT_TEST_SUITE(TestSOADataTypesAlpaka);
     CPPUNIT_TEST(testInterfaceVerbose);
     CPPUNIT_TEST(testMultiOutput);
     CPPUNIT_TEST(testSingleElement);
@@ -43,7 +43,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     void testEmptyMetadata();
   };
 
-  CPPUNIT_TEST_SUITE_REGISTRATION(TestSOADataTypes);
+  CPPUNIT_TEST_SUITE_REGISTRATION(TestSOADataTypesAlpaka);
 
   GENERATE_SOA_LAYOUT(SoATemplate,
                       SOA_EIGEN_COLUMN(Eigen::Vector3d, a),
