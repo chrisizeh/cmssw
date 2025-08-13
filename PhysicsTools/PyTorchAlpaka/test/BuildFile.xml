@@ -20,7 +20,7 @@
   <use name="PhysicsTools/PyTorchAlpaka"/>
   <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
-<bin file="alpaka/testSOADatatypes.dev.cc" name="testSOADatatypes">
+<bin file="alpaka/testSOADatatypes.dev.cc testRunner.cc" name="testSOADatatypesAlpaka">
   <use name="boost_filesystem"/>
   <use name="cppunit"/>
   <use name="cuda"/>

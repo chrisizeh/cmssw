@@ -25,7 +25,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
   using namespace ALPAKA_ACCELERATOR_NAMESPACE::torch;
   using namespace ::cms::torch;
 
-  class TestSOADataTypes : public CppUnit::TestFixture {
+  class TestSOADataTypesAlpaka : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(TestSOADataTypesAlpaka);
     CPPUNIT_TEST(testInterfaceVerbose);
     CPPUNIT_TEST(testMultiOutput);
@@ -231,7 +231,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     ::alpaka::exec<Acc1D>(queue, workDiv, TestOutputVerifyKernel{}, collection.view());
   }
 
-  void TestSOADataTypes::testInterfaceVerbose() {
+  void TestSOADataTypesAlpaka::testInterfaceVerbose() {
     Platform platform;
     std::vector<Device> alpakaDevices = ::alpaka::getDevs(platform);
     const auto& alpakaHost = ::alpaka::getDevByIdx(::alpaka_common::PlatformHost(), 0u);
@@ -266,7 +266,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     check(queue, deviceCollection, tensors);
   };
 
-  void TestSOADataTypes::testMultiOutput() {
+  void TestSOADataTypesAlpaka::testMultiOutput() {
     Platform platform;
     std::vector<Device> alpakaDevices = ::alpaka::getDevs(platform);
     const auto& alpakaHost = ::alpaka::getDevByIdx(::alpaka_common::PlatformHost(), 0u);
@@ -300,7 +300,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     check_output(queue, deviceCollection);
   };
 
-  void TestSOADataTypes::testSingleElement() {
+  void TestSOADataTypesAlpaka::testSingleElement() {
     Platform platform;
     std::vector<Device> alpakaDevices = ::alpaka::getDevs(platform);
     CPPUNIT_ASSERT(alpakaDevices.size());
@@ -333,7 +333,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     check(queue, deviceCollection, tensors);
   };
 
-  void TestSOADataTypes::testNoElement() {
+  void TestSOADataTypesAlpaka::testNoElement() {
     Platform platform;
     std::vector<Device> alpakaDevices = ::alpaka::getDevs(platform);
     CPPUNIT_ASSERT(alpakaDevices.size());
@@ -368,7 +368,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     CPPUNIT_ASSERT(tensors[3].toTensor().size(0) == 0);
   };
 
-  void TestSOADataTypes::testEmptyMetadata() {
+  void TestSOADataTypesAlpaka::testEmptyMetadata() {
     // alpaka setup
     Platform platform;
     std::vector<Device> alpakaDevices = ::alpaka::getDevs(platform);
