@@ -19,7 +19,7 @@ namespace cms::torch {
    * @note This function is intended for model loading in CMSSW environments, providing
    *       integration with the framework's exception handling and logging facilities.
    */
-  ::torch::jit::script::Module load(std::string &model_path, std::optional<::torch::Device> dev) {
+  ::torch::jit::script::Module load(const std::string &model_path, std::optional<::torch::Device> dev) {
     ::torch::jit::script::Module model;
     try {
       model = ::torch::jit::load(model_path, dev);

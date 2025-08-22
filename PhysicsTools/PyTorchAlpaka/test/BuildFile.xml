@@ -31,3 +31,7 @@
   <use name="PhysicsTools/PyTorchAlpaka"/>
   <flags ALPAKA_BACKENDS="serial cuda"/>
 </bin>
+<test name="TestPyTorchPipelineCpu" command="testPyTorchPipeline.sh cpu"/>
+<test name="TestPyTorchPipelineCuda" command="testPyTorchPipeline.sh cuda">
+	  <use name="cuda"/>
+</test>

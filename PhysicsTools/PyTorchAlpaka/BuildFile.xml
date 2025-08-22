@@ -1,6 +1,10 @@
 <use name="alpaka"/>
 <use name="HeterogeneousCore/AlpakaInterface"/>
 <use name="PhysicsTools/PyTorch"/>
+<use name="FWCore/Framework"/>
+<use name="FWCore/ParameterSet"/>
+<use name="FWCore/ServiceRegistry"/>
+<use name="FWCore/Utilities"/>
 <flags ALPAKA_BACKENDS="serial cuda"/>
 <export>
   <lib name="1"/>

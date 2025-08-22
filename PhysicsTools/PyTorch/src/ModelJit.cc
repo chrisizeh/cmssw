@@ -5,14 +5,14 @@ namespace cms::torch {
   /**
    * Ctor, loads model to Cpu memory
    */
-  ModelJit::ModelJit(std::string &model_path) : model_(cms::torch::load(model_path)), device_(::torch::kCPU) {}
+  ModelJit::ModelJit(const std::string &model_path) : model_(cms::torch::load(model_path)), device_(::torch::kCPU) {}
 
   /**
    * Ctor, loads model to specified device
    * @note: torchlib interface does not support async loading, 
    *        use `model.to(device, true)` to load asynchronously
    */
-  ModelJit::ModelJit(std::string &model_path, ::torch::Device device)
+  ModelJit::ModelJit(const std::string &model_path, ::torch::Device device)
       : model_(cms::torch::load(model_path, device)), device_(device) {}
 
   /**

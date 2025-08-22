@@ -20,7 +20,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
-  using namespace ALPAKA_ACCELERATOR_NAMESPACE::torch;
+  using namespace torch;
 
   // Input SOA
   GENERATE_SOA_LAYOUT(SoAPositionTemplate, SOA_COLUMN(float, x), SOA_COLUMN(float, y), SOA_COLUMN(float, z))
@@ -51,7 +51,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   class FillKernel {
   public:
-    template <typename TAcc, typename = std::enable_if_t<::alpaka::isAccelerator<TAcc>>>
+    template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
     ALPAKA_FN_ACC void operator()(TAcc const& acc, PortableCollection<SoAPosition, Device>::View view) const {
       float input[4][3] = {{1, 2, 1}, {2, 4, 3}, {3, 4, 1}, {2, 3, 2}};
 

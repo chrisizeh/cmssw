@@ -6,7 +6,7 @@
 
 namespace cms::torch {
 
-  ::torch::jit::script::Module load(std::string &model_path, std::optional<::torch::Device> dev = std::nullopt);
+  ::torch::jit::script::Module load(const std::string &model_path, std::optional<::torch::Device> dev = std::nullopt);
 
 }  // namespace cms::torch
 

@@ -14,7 +14,6 @@
 #include "DataFormats/Portable/interface/PortableCollection.h"
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
-#include "PhysicsTools/PyTorch/test/NvtxScopedRange.h"
 #include "PhysicsTools/PyTorch/test/testTorchBase.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/alpaka/Device.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/alpaka/ModelJitAlpaka.h"

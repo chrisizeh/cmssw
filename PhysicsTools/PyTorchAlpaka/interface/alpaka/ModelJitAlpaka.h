@@ -13,9 +13,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
    */
   class ModelJitAlpaka : public cms::torch::ModelJit {
   public:
-    explicit ModelJitAlpaka(std::string &model_path);
-    explicit ModelJitAlpaka(std::string &model_path, const Device &dev);
-    explicit ModelJitAlpaka(std::string &model_path, const Queue &queue);
+    explicit ModelJitAlpaka(const std::string &model_path);
+    explicit ModelJitAlpaka(const std::string &model_path, const Device &dev);
+    explicit ModelJitAlpaka(const std::string &model_path, const Queue &queue);
 
     void to(const Device &dev, bool non_blocking = false);
     void to(const Queue &queue, bool non_blocking = false);

@@ -14,8 +14,8 @@ namespace cms::torch {
    */
   class ModelJit {
   public:
-    explicit ModelJit(std::string &model_path);
-    explicit ModelJit(std::string &model_path, ::torch::Device device);
+    explicit ModelJit(const std::string &model_path);
+    explicit ModelJit(const std::string &model_path, ::torch::Device device);
 
     void to(::torch::Device device, bool non_blocking = false);
 

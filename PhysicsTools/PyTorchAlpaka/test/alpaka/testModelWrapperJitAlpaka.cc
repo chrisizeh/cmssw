@@ -29,7 +29,9 @@ void restoreStream() {
 #endif
 }
 
-namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
+namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
+
+  using namespace torch;
 
   class TestModelWrapperJitAlpaka : public ::torchtest::testTorchBase {
   public:
@@ -105,7 +107,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
   }
 
   void TestModelWrapperJitAlpaka::testAsyncExecution() {
-    torchtest::NvtxScopedRange range("testAsyncExecutionModel");
+    ::torchtest::NvtxScopedRange range("testAsyncExecutionModel");
 
     // setup alpaka queue
     const auto& devices = cms::alpakatools::devices<Platform>();
@@ -118,7 +120,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
     auto m = ModelJitAlpaka(m_path);
 
     // prepare input buffers
-    torchtest::NvtxScopedRange inbuf("inputBuffers");
+    ::torchtest::NvtxScopedRange inbuf("inputBuffers");
     auto inputs = std::vector<::torch::IValue>();
     inputs.push_back(::torch::randn({batch_size_, 3}, alpakatools::device(queue)));
     inbuf.end();
@@ -130,13 +132,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
     {
       Guard guard(queue);
       // async model load and inference check
-      torchtest::NvtxScopedRange exec1("execInExternalStream");
-      torchtest::NvtxScopedRange mmove("modelMoveToDevice");
+      ::torchtest::NvtxScopedRange exec1("execInExternalStream");
+      ::torchtest::NvtxScopedRange mmove("modelMoveToDevice");
       m.to(queue, true);
       mmove.end();
 
       for (uint32_t i = 0; i < 10; ++i) {
-        torchtest::NvtxScopedRange iter(("forwardPass:" + std::to_string(i)).c_str());
+        ::torchtest::NvtxScopedRange iter(("forwardPass:" + std::to_string(i)).c_str());
         auto out = m.forward(inputs);
         iter.end();
       }
@@ -148,9 +150,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
     restoreStream();
 
     // operations should be restored and scheduled on default stream
-    torchtest::NvtxScopedRange exec2("execInDefaultStream");
+    ::torchtest::NvtxScopedRange exec2("execInDefaultStream");
     for (uint32_t i = 0; i < 10; ++i) {
-      torchtest::NvtxScopedRange iter(("forwardPass:" + std::to_string(i)).c_str());
+      ::torchtest::NvtxScopedRange iter(("forwardPass:" + std::to_string(i)).c_str());
       auto out = m.forward(inputs);
       iter.end();
     }
@@ -159,4 +161,4 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torch {
     range.end();
   }
 
-}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torch
+}  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest
