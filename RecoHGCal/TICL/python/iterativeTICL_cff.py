@@ -30,6 +30,7 @@ from Configuration.ProcessModifiers.ticl_superclustering_mustache_ticl_cff impor
 from RecoHGCal.TICL.TracksterSoAProducer_alpaka import TracksterSoAProducer_alpaka
 from RecoHGCal.TICL.MergedGNNTracksterProducer_alpaka import MergedGNNTracksterProducer_alpaka
 from RecoHGCal.TICL.TracksterLinkingByGNNProducer_alpaka import TracksterLinkingByGNNProducer_alpaka 
+from RecoHGCal.TICL.TracksterLinkingByGNNNoLibrary_alpaka import TracksterLinkingByGNNNoLibrary_alpaka 
 
 ticlLayerTileTask = cms.Task(ticlLayerTileProducer)
 
@@ -167,9 +168,14 @@ ticlTracksterSoAProducer = TracksterSoAProducer_alpaka(ticlGraph = cms.InputTag(
 ticlTracksterSoATask = cms.Task(ticlTracksterSoAProducer)
 ticlTrackstersLinkingByGNNProducer = TracksterLinkingByGNNProducer_alpaka(
     inputs = cms.InputTag("ticlTracksterSoAProducer"),
-    modelPath = cms.FileInPath("RecoHGCal/TICL/models/model_inference.pt"),
+    modelPath = cms.FileInPath("RecoHGCal/TICL/models/model_08-21.pt"),
+)
+ticlTrackstersLinkingByGNNNoLibProducer = TracksterLinkingByGNNNoLibrary_alpaka(
+    inputs = cms.InputTag("ticlTracksterSoAProducer"),
+    modelPath = cms.FileInPath("RecoHGCal/TICL/models/model_08-21.pt"),
 )
 ticlTrackstersLinkingByGNNProducerTask = cms.Task(ticlTrackstersLinkingByGNNProducer)
+ticlTrackstersLinkingByGNNNoLibProducerTask = cms.Task(ticlTrackstersLinkingByGNNNoLibProducer)
 ticlMergedGNNTrackstersProducer = MergedGNNTracksterProducer_alpaka(
     gnnOutput = cms.InputTag("ticlTrackstersLinkingByGNNProducer"),
     gnnInput = cms.InputTag("ticlTracksterSoAProducer")
@@ -177,7 +183,7 @@ ticlMergedGNNTrackstersProducer = MergedGNNTracksterProducer_alpaka(
 ticlMergedGNNTrackstersProducerTask = cms.Task(ticlMergedGNNTrackstersProducer)
 ticl_v5.toReplaceWith(mergeTICLTask, mergeTICLTask.copyAndExclude([ticlTracksterMergeTask]))
 ticl_v5.toReplaceWith(ticlTracksterLinks, ticlMergedGNNTrackstersProducer)
-ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterSoATask,ticlTrackstersLinkingByGNNProducerTask,ticlTracksterLinksTask))
+ticl_v5.toModify(mergeTICLTask, func=lambda x : x.add(ticlTracksterSoATask,ticlTrackstersLinkingByGNNProducerTask,ticlTracksterLinksTask, ticlTrackstersLinkingByGNNNoLibProducerTask))
 
 
 mtdSoATask = cms.Task(mtdSoA)

@@ -114,7 +114,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::iota(lookup.begin(), lookup.end(), 0);
     std::array<int, 2> merge_idx;
     for (int i = 0; i < numEdges; ++i) {
-      if (post_view.score()[i] > 0.99) {
+      if (post_view.score()[i] > 0.6) {
         merge_idx[0] = post_view.out()[i];
         while (merge_idx[0] != lookup[merge_idx[0]]) {
           merge_idx[0] = lookup[merge_idx[0]];
@@ -143,6 +143,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       }
     }
 
+    std::cout << "(MergedGNNTracksterProducer) Num Trackster: " << output.size() << std::endl;
     ticlAlpaka::assignPCAtoTracksters(output,
                                 layerClusters,
                                 layerClustersTimes,
