@@ -114,7 +114,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::iota(lookup.begin(), lookup.end(), 0);
     std::array<int, 2> merge_idx;
     for (int i = 0; i < numEdges; ++i) {
-      if (post_view.score()[i] > 0.99) {
+      // if (post_view.score()[i] > 0.99) {
         merge_idx[0] = post_view.out()[i];
         while (merge_idx[0] != lookup[merge_idx[0]]) {
           merge_idx[0] = lookup[merge_idx[0]];
@@ -127,7 +127,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
           output[merge_idx[0]].mergeTracksters(output[merge_idx[1]]);
           lookup[merge_idx[1]] = merge_idx[0];
         }
-      }
+      // }
     }
     int nextIdx = 0;
     for (int i = 0; i < static_cast<int>(lookup.size()); ++i) {
