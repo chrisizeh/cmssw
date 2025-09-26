@@ -260,7 +260,7 @@ namespace cms::torch::alpakatools {
       blocks.try_emplace(name, 
                          nElements, 
                          target_ptr, 
-                         Columns{col}, 
+                         col, 
                          get_type<typename T::ScalarType>(), 
                          sizeof(typename T::ScalarType));
       order.push_back(name);
