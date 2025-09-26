@@ -33,6 +33,9 @@ namespace cms::torch::alpakatools {
   struct Columns {
     std::vector<int> columns;
 
+	// Empty constructor, to fill iteratively
+    Columns() {}
+
     // Constructor for scalar columns
     Columns(int columns_) { columns.push_back(columns_); }
 
@@ -111,6 +114,10 @@ namespace cms::torch::alpakatools {
           stride[i] = stride[i - 1] * columns[i - 2];
         }
         stride[1] = stride[N - 1] * columns[N - 2];
+
+		// if(columns[0] == 1)
+		//   stride.erase(myvector.begin());
+		//   // stride.pop_back();
       }
       return stride;
     }
@@ -229,9 +236,14 @@ namespace cms::torch::alpakatools {
                             ptr,
                             std::get<0>(std::get<0>(others).tupleOrPointer())...));
 
-      Columns col({sizeof...(others) + 1, T::ValueType::RowsAtCompileTime});
-      if (T::ValueType::ColsAtCompileTime > 1)
+	  Columns col;
+	  if (sizeof...(others) > 0)
+		col.push(sizeof...(others) + 1);
+	  col.push(T::ValueType::RowsAtCompileTime);
+	  
+      if (T::ValueType::ColsAtCompileTime > 1) {
         col.push(T::ValueType::ColsAtCompileTime);
+	  }
 
 #ifdef ALPAKA_ACC_GPU_HIP_ENABLED
       auto hip_memcpy = std::make_shared<HipMemcpyFallback<typename T::ScalarType>>(
@@ -248,7 +260,7 @@ namespace cms::torch::alpakatools {
       blocks.try_emplace(name, 
                          nElements, 
                          target_ptr, 
-                         col, 
+                         Columns{col}, 
                          get_type<typename T::ScalarType>(), 
                          sizeof(typename T::ScalarType));
       order.push_back(name);
