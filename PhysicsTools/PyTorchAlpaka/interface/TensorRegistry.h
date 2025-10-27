@@ -73,10 +73,20 @@ namespace cms::torch::alpakatools {
   //                     SOA_COLUMN(float, phi),  note features position was swapped to ensure continuity
   //                     SOA_COLUMN(float, eta))
   //
+  
   template <typename TQueue>
     requires alpaka::isQueue<TQueue>
   class TensorRegistry {
+
   public:
+	template <typename TQueue_H, typename T>
+	requires alpaka::isQueue<TQueue_H>
+	friend class TensorHandle;
+
+	template <typename TQueue_H>
+	requires alpaka::isQueue<TQueue_H>
+	friend class ITensorHandle;
+
     explicit TensorRegistry(int batch_size) : batch_size_(batch_size) {}
 
     // SOA_EIGEN_COLUMN

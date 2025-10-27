@@ -12,6 +12,11 @@
 
 namespace cms::torch::alpakatools {
 
+  // Forward declaration for friend
+  template <typename TQueue>
+    requires alpaka::isQueue<TQueue>
+  class TensorRegistry;
+
   template <typename T>
   ::torch::ScalarType get_type() {
     return ::torch::CppTypeToScalarType<std::remove_const_t<T>>();
@@ -59,8 +64,11 @@ namespace cms::torch::alpakatools {
 
     virtual std::vector<long int> sizes() const = 0;
     virtual std::vector<long int> strides() const = 0;
+	template <typename TQueue_T>
+	friend ::torch::Tensor arrayToTensor(::torch::Device device, ITensorHandle<TQueue_T>& tensor_handle);
+	friend class TensorRegistry<TQueue>;
 
-    // TODO: make these frient of TensorRegistry + arrayToTensor function
+  private:
     virtual void copy(TQueue &queue, const MemcpyKind kind) = 0;
     virtual void* data() = 0;
   };
@@ -101,10 +109,9 @@ namespace cms::torch::alpakatools {
     iterator_t cbegin() const { return dims_.cbegin(); }
     iterator_t cend() const { return dims_.cend(); }
 
-    // TODO: make these frient of TensorRegistry + arrayToTensor function
+  private:
     void copy(TQueue &queue, const MemcpyKind kind) override { policy_.copy(queue, kind); }
     void* data() override { return static_cast<void*>(policy_.data()); }
-  private:
     void init_sizes() {
       sizes_ = std::vector<long int>(dims_.size() + 1);
       sizes_[0] = dims_.batch_size();

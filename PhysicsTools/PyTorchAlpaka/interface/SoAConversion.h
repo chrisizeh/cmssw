@@ -18,6 +18,7 @@ namespace cms::torch::alpakatools {
     //
     // TODO: open issue to `pytorch` repo:
     //  - see if they can add const correctness, or get to know why const is currently prevented?
+	assert(reinterpret_cast<intptr_t>(tensor_handle.data()) % tensor_handle.alignment() == 0);
     auto options = ::torch::TensorOptions().dtype(tensor_handle.type()).device(device).pinned_memory(true);
     return ::torch::from_blob(tensor_handle.data(), tensor_handle.sizes(), tensor_handle.strides(), options);
   }
@@ -26,7 +27,6 @@ namespace cms::torch::alpakatools {
   inline std::vector<::torch::IValue> convertInput(TensorRegistry<TQueue>& inputs, ::torch::Device device) {
     std::vector<::torch::IValue> tensors(inputs.size());
     for (size_t i = 0; i < inputs.size(); i++) {
-      assert(reinterpret_cast<intptr_t>(inputs[i].data()) % inputs[i].alignment() == 0);
       tensors[i] = arrayToTensor(device, inputs[i]);
     }
     return tensors;
@@ -34,7 +34,6 @@ namespace cms::torch::alpakatools {
 
   template <typename TQueue>
   inline ::torch::Tensor convertOutput(TensorRegistry<TQueue>& outputs, ::torch::Device device) {
-    assert(reinterpret_cast<intptr_t>(outputs[0].data()) % outputs[0].alignment() == 0);
     return arrayToTensor(device, outputs[0]);
   }
 
@@ -43,7 +42,6 @@ namespace cms::torch::alpakatools {
     if (tensor.isTuple()) {
       const auto tensor_tuple = tensor.toTuple();
       for (size_t i = 0; i < outputs.size(); i++) {
-        assert(reinterpret_cast<intptr_t>(outputs[i].data()) % outputs[i].alignment() == 0);
         arrayToTensor(device, outputs[i]) = tensor_tuple->elements()[i].toTensor();
       }
     }
@@ -56,7 +54,6 @@ namespace cms::torch::alpakatools {
     for (size_t i = 0; i < outputs.size(); i++) {
       // Only tensors are currenlty supported for conversion
       if (tensors[i].isTensor()) {
-        assert(reinterpret_cast<intptr_t>(outputs[i].data()) % outputs[i].alignment() == 0);
         arrayToTensor(device, outputs[i]) = tensors[i].toTensor();
       }
     }
