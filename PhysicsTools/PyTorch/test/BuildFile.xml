@@ -1,13 +1,13 @@
 <iftool name="cuda-gcc-support">
-<bin name="testJitLoad" file="testJitLoad.cc testRunner.cc">
-  <use name="boost_filesystem"/>
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-  <use name="PhysicsTools/PyTorch"/>
-</bin>
+  <bin name="testJitLoad" file="testJitLoad.cc testRunner.cc">
+	<use name="boost_filesystem"/>
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+	<use name="PhysicsTools/PyTorch"/>
+  </bin>
 </iftool>
 
 <bin name="testTorchlibModelsCpu" file="testTorchlibModelsCpu.cc testRunner.cc">
@@ -16,65 +16,65 @@
 </bin>
 
 <iftool name="cuda-gcc-support">
-<bin name="testTorchlibModelsCuda" file="testTorchlibModelsCuda.cc testRunner.cc">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
+  <bin name="testTorchlibModelsCuda" file="testTorchlibModelsCuda.cc testRunner.cc">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
 </iftool>
 
 <iftool name="cuda-gcc-support">
-<bin name="testTorchTensorStride" file="testRunner.cc testTorchTensorStride.cu">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
+  <bin name="testTorchTensorStride" file="testRunner.cc testTorchTensorStride.cu">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
 </iftool>
 
 <iftool name="cuda-gcc-support">
-<bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
+  <bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
 </iftool>
 
 <iftool name="cuda-gcc-support">
-<bin name="testTorchFromBufferPinnedMemory" file="testTorchFromBufferPinnedMemory.cu">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
+  <bin name="testTorchFromBufferPinnedMemory" file="testTorchFromBufferPinnedMemory.cu">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
 </iftool>
 
 <!-- <iftool name="cuda-gcc-support">
-<bin name="testModelAot" file="testModelAot.cc testRunner.cc">
-  <use name="boost_filesystem"/>
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-  <use name="PhysicsTools/PyTorch"/>
-</bin> 
+  <bin name="testModelAot" file="testModelAot.cc testRunner.cc">
+	<use name="boost_filesystem"/>
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="FWCore/Utilities"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+	<use name="PhysicsTools/PyTorch"/>
+  </bin> 
 </iftool> -->
 
 <iftool name="cuda-gcc-support">
-<bin name="testModelJit" file="testModelJit.cc testRunner.cc">
-  <use name="boost_filesystem"/>
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-  <use name="PhysicsTools/PyTorch"/>
-</bin>
+  <bin name="testModelJit" file="testModelJit.cc testRunner.cc">
+	<use name="boost_filesystem"/>
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+	<use name="PhysicsTools/PyTorch"/>
+  </bin>
 </iftool>

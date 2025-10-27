@@ -22,7 +22,7 @@ namespace cms::torch::alpakatools {
       return ::torch::Device(c10::DeviceType::CPU);
       // return ::torch::Device(c10::DeviceType::HIP, device.getNativeHandle());
 #else
-    // default, crop index
+    // default, omit device index for CPU 
     return ::torch::Device(c10::DeviceType::CPU);
 #endif
   }
