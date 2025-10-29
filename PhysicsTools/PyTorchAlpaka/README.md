@@ -52,7 +52,7 @@ auto result_records = deviceResultCollection.view().records();
 ```
 - **For each function call** of `register_tensor` (i.e. one tensor), **add the columns** that should be merged into a single tensor. The datatypes must be the same, and the columns must be contiguous. This means, only columns that are defined directly after each other in the SoA layout can be used for the same tensor. However, not all columns of an SoA have to be used. Only those mentioned in the `registry_tensor` are selected for the tensor creation. Any holes in contiguity created by the alignment are automatically taken care of by the stride calculation.
 
-IMPORTANT: continuity of memory is a strict requirement!
+**IMPORTANT:** continuity of memory is a strict requirement!
 ```
 TensorRegistry input(batch_size);
 input.register_tensor<SoA>("eigen_vector", records.a(), records.b());
@@ -62,7 +62,7 @@ input.register_tensor<SoA>("scalar", records.type());
 input.change_order({"column", "scalar", "eigen_matrix", "eigen_vector"});
 
 TensorRegistry output(batch_size);
-output.register_tenosr<SoA>("result", result_view.cluster());
+output.register_tensor<SoA>("result", result_view.cluster());
 ```
 
 <!-- For Eigen columns, if only a single Vector/Matrix is provided for the tensor, is provided, as if each vector dimension is a column. This means size of tensor is (nElements, dimension) instead of (nElements, 1, dimension). -->
