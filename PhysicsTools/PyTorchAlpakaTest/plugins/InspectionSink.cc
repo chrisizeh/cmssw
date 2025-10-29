@@ -2,7 +2,12 @@
 
 #include <fmt/format.h>
 
-#include "DataFormats/PortableTestObjects/interface/TorchTestHostCollection.h"
+#include "DataFormats/PortableTestObjects/interface/ParticleHostCollection.h"
+#include "DataFormats/PortableTestObjects/interface/ImageHostCollection.h"
+#include "DataFormats/PortableTestObjects/interface/LogitsHostCollection.h"
+#include "DataFormats/PortableTestObjects/interface/SimpleNetHostCollection.h"
+#include "DataFormats/PortableTestObjects/interface/MultiHeadNetHostCollection.h"
+
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/Framework/interface/stream/EDAnalyzer.h"
@@ -17,7 +22,7 @@
 
 namespace torchtest {
 
-  using namespace torchportabletest;
+  using namespace portabletest;
 
   inline edm::InputTag getBackendTag(edm::InputTag const& tag) {
     return edm::InputTag(tag.label(), "backend", tag.process());

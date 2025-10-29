@@ -4,11 +4,11 @@
 #include "DataFormats/Portable/interface/PortableHostCollection.h"
 #include "PhysicsTools/PyTorchAlpakaTest/interface/MaskSoA.h"
 
-namespace torchportabletest {
+namespace portabletest {
 
   using MaskHost = PortableHostCollection<Mask>;
   using ScalarMaskHost = PortableHostCollection<ScalarMask>;
 
-}  // namespace torchportabletest
+}  // namespace portabletest
 
 #endif  // PhysicsTools_PyTorchAlpakaTest_interface_MaskHost_h

@@ -1,7 +1,7 @@
 # PhysicsTools/PyTorch
 The torch interface is split into a general torch wrapper and an [Alpaka supported interface](../PyTorchAlpaka). A full ML CMSSW pipeline is implemented and tested in [PyTorchAlpakaTest](../PyTorchAlpakaTest) and serves as a tutorial how to run direct inference with `Portable` modules.
 
-This package provides a basic implementation to support both just-in-time (JIT) and ahead-of-time (AOT) model execution (Beta version for AOT) in CMSSW. Only `torch` tensors are supported by this package, so no copy-less execution can be guaranteed. To use the automatic conver5sion of SoA to torch tensors, `PyTorchAlpaka` has to be used.
+This package provides a basic implementation to support both just-in-time (JIT) and ahead-of-time (AOT) model execution (Beta version for AOT) in CMSSW. Only `torch` tensors are supported by this package, so no copy-less execution can be guaranteed. To use the automatic conversion of SoA to torch tensors, `PyTorchAlpaka` has to be used.
 
 ## PyTorchService
 To not interfere with CMSSW threading model, `PyTorchService` **MUST** be included in the `cmsRun` configuration path, whenever PyTorch is used. The service will disable internal threading of PyTorch. 
@@ -26,6 +26,9 @@ tm.save(f"traced_model.pt")
 ```
 
 ### Ahead-of-Time (example code, not production ready):
+
+**The scripts provided for compiling the AOT model are purely for illustrative purposes to simplify further development, and are by no means intended for production use.**
+
 - Uses PyTorch AOT compiler to generate `.cpp` and `.so` files. (prerequisite done manually by end-user)
 - Package provide helper scripts to automate compilation process with CMSSW provided tools to some extent
 - Loads compiled model via [AOTIModelPackageLoader](https://github.com/pytorch/pytorch/blob/v2.6.0/torch/csrc/inductor/aoti_package/model_package_loader.h).

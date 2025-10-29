@@ -1,5 +1,6 @@
 #include "DataFormats/PortableTestObjects/interface/TestSoA.h"
-#include "DataFormats/PortableTestObjects/interface/alpaka/TorchTestDeviceCollection.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/ParticleDeviceCollection.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/MultiHeadNetDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -16,7 +17,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
-  using namespace torchportabletest;
+  using namespace portabletest;
   using namespace cms::torch::alpakatools;
 
   class MultiHeadNet : public stream::EDProducer<> {

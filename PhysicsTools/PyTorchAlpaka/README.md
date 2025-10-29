@@ -18,6 +18,8 @@ Examples demonstrating the interoperability of PyTorch with Alpaka in the CMSSW 
 ## Direct Inference on SoA 
 The interface provides a converter to dynamically wrap SoA data into one or more `torch::tensors` without the need to copy data (or minimal copy overhead).
 
+**Due to the lack of const correctness ensured by PyTorch, `const` data is currently being copied.**
+
 ### TensorRegistry
 The structural information of the inputs/outputs SoA are stored in an `TensorRegistry`. Which is a high level object to register column lists from which tensors are created
 

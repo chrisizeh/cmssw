@@ -7,7 +7,7 @@
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest::kernels {
 
   using namespace cms::alpakatools;
-  using namespace torchportabletest;
+  using namespace portabletest;
 
   void randomFillParticleCollection(Queue& queue, ParticleDeviceCollection& particles) {
     const uint32_t threads_per_block = 64;

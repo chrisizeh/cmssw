@@ -6,7 +6,7 @@
 
 #include "DataFormats/SoATemplate/interface/SoALayout.h"
 
-namespace torchportabletest {
+namespace portabletest {
 
   using PartMask = Eigen::Vector<uint8_t, 3>;
   GENERATE_SOA_LAYOUT(MaskLayout, SOA_EIGEN_COLUMN(PartMask, mask));
@@ -15,6 +15,6 @@ namespace torchportabletest {
   using Mask = MaskLayout<>;
   using ScalarMask = ScalarMaskLayout<>;
 
-}  // namespace torchportabletest
+}  // namespace portabletest
 
 #endif  // PhysicsTools_PyTorchAlpakaTest_interface_MaskSoA_h

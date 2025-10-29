@@ -1,4 +1,5 @@
-#include "DataFormats/PortableTestObjects/interface/alpaka/TorchTestDeviceCollection.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/ParticleDeviceCollection.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/ImageDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -13,7 +14,7 @@
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
-  using namespace torchportabletest;
+  using namespace portabletest;
 
   class DataSource : public stream::EDProducer<> {
   public:
