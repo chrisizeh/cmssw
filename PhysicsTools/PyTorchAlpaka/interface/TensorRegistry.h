@@ -14,6 +14,22 @@
 #include "PhysicsTools/PyTorch/interface/TorchInterface.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/TensorHandle.h"
 
+namespace alpaka_cuda_async::torch {
+  class AlpakaModel;
+}
+
+namespace alpaka_rocm_async::torch {
+  class AlpakaModel;
+}
+
+namespace alpaka_serial_sync::torch {
+  class AlpakaModel;
+}
+
+namespace alpaka::torch {
+  class AlpakaModel;
+}
+
 namespace cms::torch::alpakatools {
 
   using namespace cms::soa;
@@ -79,13 +95,10 @@ namespace cms::torch::alpakatools {
   class TensorRegistry {
 
   public:
-	template <typename TQueue_H, typename T>
-	requires alpaka::isQueue<TQueue_H>
-	friend class TensorHandle;
-
-	template <typename TQueue_H>
-	requires alpaka::isQueue<TQueue_H>
-	friend class ITensorHandle;
+	friend class alpaka_cuda_async::torch::AlpakaModel;
+	friend class alpaka_rocm_async::torch::AlpakaModel;
+	friend class alpaka_serial_sync::torch::AlpakaModel;
+	friend class alpaka::torch::AlpakaModel;
 
     explicit TensorRegistry(int batch_size) : batch_size_(batch_size) {}
 
@@ -175,7 +188,7 @@ namespace cms::torch::alpakatools {
     size_t size() const { return registry_.size(); }
     ITensorHandle<TQueue>& operator[](const size_t index) const { return *registry_.at(order_[index]); }
 
-    // TODO: make these frient of AlpakaModel user should not be able to call it directly
+  private:
     void copy(TQueue& queue, const MemcpyKind kind) {
       for (const auto& name : order_)
         registry_.at(name)->copy(queue, kind);
@@ -185,7 +198,6 @@ namespace cms::torch::alpakatools {
         alpaka::wait(queue);
     }
 
-  private:
     // propagate pointer (Tptr) and type to distinguish between T* and const T* and trigger internal copy.
     template <typename Tptr>
     void emplace_tensor(const std::string& name,

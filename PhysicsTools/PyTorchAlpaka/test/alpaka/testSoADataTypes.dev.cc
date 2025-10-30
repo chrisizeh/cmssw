@@ -18,7 +18,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   class TestSOADataTypesAlpaka : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(TestSOADataTypesAlpaka);
-    CPPUNIT_TEST(testInterfaceVerbose);
+    CPPUNIT_TEST(testInterface);
     CPPUNIT_TEST(testMultiOutput);
     CPPUNIT_TEST(testSingleElement);
     CPPUNIT_TEST(testNoElement);
@@ -26,7 +26,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     CPPUNIT_TEST_SUITE_END();
 
   public:
-    void testInterfaceVerbose();
+    void testInterface();
     void testMultiOutput();
     void testSingleElement();
     void testNoElement();
@@ -175,6 +175,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
       CPPUNIT_ASSERT(view.x()[i] - tensors[0].toTensor()[i][0].item<double>() < tol);
       CPPUNIT_ASSERT(view.x()[i] - tensors[0].toTensor()[i][0].item<double>() > -tol);
 
+      CPPUNIT_ASSERT(view.x()[i] - tensors[4].toTensor()[i].item<double>() < tol);
+      CPPUNIT_ASSERT(view.x()[i] - tensors[4].toTensor()[i].item<double>() > -tol);
+
       CPPUNIT_ASSERT(view.y()[i] - tensors[0].toTensor()[i][1].item<double>() < tol);
       CPPUNIT_ASSERT(view.y()[i] - tensors[0].toTensor()[i][1].item<double>() > -tol);
 
@@ -186,7 +189,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     }
   }
 
-  void TestSOADataTypesAlpaka::testInterfaceVerbose() {
+  void TestSOADataTypesAlpaka::testInterface() {
     Platform platform;
     std::vector<Device> alpakaDevices = ::alpaka::getDevs(platform);
     const auto& alpakaHost = ::alpaka::getDevByIdx(::alpaka_common::PlatformHost(), 0u);
@@ -206,14 +209,13 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
     TensorRegistry<Queue> input(batch_size);
     input.register_tensor<SoA>("vector", records.a(), records.b());
+    input.register_tensor<SoA>("single_vector", records.a());
     input.register_tensor<SoA>("matrix", records.c());
     input.register_tensor<SoA>("column", records.x(), records.y(), records.z());
+    input.register_tensor<SoA>("single_column", records.x());
     input.register_tensor<SoA>("scalar", records.type());
-    input.change_order({"column", "scalar", "matrix", "vector"});
+    input.change_order({"column", "scalar", "matrix", "vector", "single_column", "single_vector"});
 
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-    input.copy(queue, MemcpyKind::DeviceToHost);
-#endif
     std::vector<::torch::IValue> tensors = convertInput(input, torchDevice);
 
     alpaka::memcpy(queue, hostCollection.buffer(), deviceCollection.buffer());
@@ -247,17 +249,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     output.register_tensor<SoA>("v", records.v());
     output.register_tensor<SoA>("w", records.w());
 
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-    input.copy(queue, MemcpyKind::DeviceToHost);
-    output.copy(queue, MemcpyKind::DeviceToHost);
-#else
-    input.copy(queue, MemcpyKind::DeviceToDevice);
-#endif
     std::vector<::torch::IValue> tensors = convertInput(input, torchDevice);
     convertOutput(tensors, output, torchDevice);
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-    output.copy(queue, MemcpyKind::HostToDevice);
-#endif
 
     // Check if tensor list built correctly
     check_output(queue, deviceCollection);
@@ -281,17 +274,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     // Run Converter for single tensor
     TensorRegistry<Queue> input(batch_size);
     input.register_tensor<SoA>("vector", records.a(), records.b());
+    input.register_tensor<SoA>("single_vector", records.a(), records.b());
     input.register_tensor<SoA>("matrix", records.c());
     input.register_tensor<SoA>("column", records.x(), records.y(), records.z());
+    input.register_tensor<SoA>("single_column", records.x());
     input.register_tensor<SoA>("scalar", records.type());
-    input.change_order({"column", "scalar", "matrix", "vector"});
+    input.change_order({"column", "scalar", "matrix", "vector", "single_column", "single_vector"});
 
     TensorRegistry<Queue> output(batch_size);
     output.register_tensor<SoA>("result", records.v());
 
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-    input.copy(queue, MemcpyKind::DeviceToHost);
-#endif
     std::vector<::torch::IValue> tensors = convertInput(input, torchDevice);
 
     // Check if tensor list built correctly
@@ -320,9 +312,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     input.register_tensor<SoA>("scalar", records.type());
     input.change_order({"column", "scalar", "matrix", "vector"});
 
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-    input.copy(queue, MemcpyKind::DeviceToHost);
-#endif
     std::vector<::torch::IValue> tensors = convertInput(input, torchDevice);
 
     // Check if tensor list has empty tensors
@@ -349,9 +338,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     // Run Converter for empty metadata
     TensorRegistry<Queue> input(batch_size);
 
-#ifdef ALPAKA_ACC_GPU_HIP_ENABLED
-    input.copy(queue, MemcpyKind::DeviceToHost);
-#endif
     std::vector<::torch::IValue> tensors = convertInput(input, torchDevice);
 
     // Check if tensor list is empty

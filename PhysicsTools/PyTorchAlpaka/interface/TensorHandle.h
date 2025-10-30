@@ -64,6 +64,7 @@ namespace cms::torch::alpakatools {
 
     virtual std::vector<long int> sizes() const = 0;
     virtual std::vector<long int> strides() const = 0;
+
 	template <typename TQueue_T>
 	friend ::torch::Tensor arrayToTensor(::torch::Device device, ITensorHandle<TQueue_T>& tensor_handle);
 	friend class TensorRegistry<TQueue>;

@@ -7,7 +7,8 @@
   <use name="pytorch-cuda" for="alpaka/cuda"/>
   <use name="HeterogeneousCore/AlpakaInterface"/>
   <use name="PhysicsTools/PyTorchAlpaka"/>
-  <flags ALPAKA_BACKENDS="1"/>
+  <!-- Omit ROCM because of copy workaround -> copy private to TensorRegistry -->
+  <flags ALPAKA_BACKENDS="cuda serial"/>
 </bin>
 
 <bin file="alpaka/testSoAToTorch.dev.cc testRunner.cc" name="testSoAToTorch">
