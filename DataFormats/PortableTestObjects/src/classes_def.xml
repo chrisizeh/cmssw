@@ -62,15 +62,21 @@
   <class name="portabletest::MultiHeadNetHostCollection"/>
   <class name="edm::Wrapper<portabletest::MultiHeadNetHostCollection>" splitLevel="0"/>
 
-  <class name="portabletest::Image"/>
-  <class name="portabletest::Image::View"/>
-  <class name="portabletest::Image::ConstView"/>
+  <class name="portabletest::ImageSoA"/>
+  <class name="portabletest::ImageSoA::View"/>
+  <class name="portabletest::ImageSoA::ConstView"/>
   <class name="portabletest::ImageHostCollection"/>
   <class name="edm::Wrapper<portabletest::ImageHostCollection>" splitLevel="0"/>
 
-  <class name="portabletest::Logits"/>
-  <class name="portabletest::Logits::View"/>
-  <class name="portabletest::Logits::ConstView"/>
+  <class name="portabletest::LogitsSoA"/>
+  <class name="portabletest::LogitsSoA::View"/>
+  <class name="portabletest::LogitsSoA::ConstView"/>
   <class name="portabletest::LogitsHostCollection"/>
   <class name="edm::Wrapper<portabletest::LogitsHostCollection>" splitLevel="0"/>
+
+  <class name="portabletest::MaskSoA"/>
+  <class name="portabletest::MaskSoA::View"/>
+  <class name="portabletest::MaskSoA::ConstView"/>
+  <class name="portabletest::MaskHostCollection"/>
+  <class name="edm::Wrapper<portabletest::MaskHostCollection>" splitLevel="0"/>
 </lcgdict>

@@ -6,7 +6,7 @@
 
 namespace portabletest {
 
-  using ImageHostCollection = PortableHostCollection<Image>;
+  using ImageHostCollection = PortableHostCollection<ImageSoA>;
 
 }  // namespace portabletest
 

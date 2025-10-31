@@ -1,6 +1,7 @@
 #include "DataFormats/PortableTestObjects/interface/TestSoA.h"
 #include "DataFormats/PortableTestObjects/interface/alpaka/ParticleDeviceCollection.h"
 #include "DataFormats/PortableTestObjects/interface/alpaka/SimpleNetDeviceCollection.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/MaskDeviceCollection.h"
 #include "FWCore/ParameterSet/interface/ConfigurationDescriptions.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/ParameterSetDescription.h"
@@ -13,7 +14,6 @@
 #include "PhysicsTools/PyTorchAlpaka/interface/QueueGuard.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/TensorRegistry.h"
 #include "PhysicsTools/PyTorchAlpaka/interface/alpaka/AlpakaModel.h"
-#include "PhysicsTools/PyTorchAlpakaTest/interface/alpaka/MaskDevice.h"
 #include "PhysicsTools/PyTorchAlpakaTest/plugins/Environment.h"
 #include "PhysicsTools/PyTorchAlpakaTest/plugins/alpaka/CommonKernels.h"
 
@@ -46,10 +46,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
       auto masked_net_output = SimpleNetDeviceCollection(batch_size, event.queue());
 
       // mask
-      auto mask = MaskDevice(batch_size, event.queue());
+      auto mask = MaskDeviceCollection(batch_size, event.queue());
       kernels::fillMask(event.queue(), mask);
       // note that scalar mask can be used to mask out entire batch at once (scalars are broadcasted)
-      // auto scalar_mask = ScalarMaskDevice(batch_size, event.queue());
+      // auto scalar_mask = ScalarMaskDeviceCollection(batch_size, event.queue());
       // scalar_mask.zeroInitialise(event.queue());
 
       // records
@@ -61,9 +61,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
       TensorRegistry<Queue> inputs(batch_size);
       inputs.register_tensor<ParticleSoA>(
           "particles", particle_records.pt(), particle_records.eta(), particle_records.phi());
-      // note override of default `ParticleSoA` layout with `Mask`
-      inputs.register_tensor<Mask>("mask", mask_records.mask());
-      // inputs.register_tensor<ScalarMask>("scalar_mask", scalar_mask_records.scalar_mask());
+      // note override of default `ParticleSoA` layout with `MaskSoA`
+      inputs.register_tensor<MaskSoA>("mask", mask_records.mask());
+      // inputs.register_tensor<ScalarMaskSoA>("scalar_mask", scalar_mask_records.scalar_mask());
       // output tensor definition
       TensorRegistry<Queue> outputs(batch_size);
       outputs.register_tensor<SimpleNetSoA>("regression_head", output_records.reco_pt());

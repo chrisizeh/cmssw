@@ -14,7 +14,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // inside the ALPAKA_ACCELERATOR_NAMESPACE::portabletest namespace
     using namespace ::portabletest;
 
-    using LogitsDeviceCollection = PortableCollection<Logits>;
+    using LogitsDeviceCollection = PortableCollection<LogitsSoA>;
 
   }  // namespace portabletest
 

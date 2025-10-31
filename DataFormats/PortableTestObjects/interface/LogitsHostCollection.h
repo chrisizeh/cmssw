@@ -6,7 +6,7 @@
 
 namespace portabletest {
 
-  using LogitsHostCollection = PortableHostCollection<Logits>;
+  using LogitsHostCollection = PortableHostCollection<LogitsSoA>;
 
 }  // namespace portabletest
 

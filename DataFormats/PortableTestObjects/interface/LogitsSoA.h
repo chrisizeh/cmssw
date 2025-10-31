@@ -12,7 +12,7 @@ namespace portabletest {
 
   using LogitsType = Eigen::Vector<float, 10>;
   GENERATE_SOA_LAYOUT(LogitsLayout, SOA_EIGEN_COLUMN(LogitsType, logits))
-  using Logits = LogitsLayout<>;
+  using LogitsSoA = LogitsLayout<>;
 
 }  // namespace portabletest
 

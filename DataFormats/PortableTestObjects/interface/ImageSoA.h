@@ -15,7 +15,7 @@ namespace portabletest {
                       SOA_EIGEN_COLUMN(ColorChannel, r),
                       SOA_EIGEN_COLUMN(ColorChannel, g),
                       SOA_EIGEN_COLUMN(ColorChannel, b))
-  using Image = ImageLayout<>;
+  using ImageSoA = ImageLayout<>;
 
 }  // namespace portabletest
 

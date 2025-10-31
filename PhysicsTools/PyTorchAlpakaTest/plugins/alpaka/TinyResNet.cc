@@ -48,10 +48,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
       auto output_records = logits.view().records();
       // input tensor definition
       TensorRegistry<Queue> inputs(batch_size);
-      inputs.register_tensor<Image>("images", input_records.r(), input_records.g(), input_records.b());
+      inputs.register_tensor<ImageSoA>("images", input_records.r(), input_records.g(), input_records.b());
       // output tensor definition
       TensorRegistry<Queue> outputs(batch_size);
-      outputs.register_tensor<Logits>("logits", output_records.logits());
+      outputs.register_tensor<LogitsSoA>("logits", output_records.logits());
 
       // inference, queue guard restore stream when goes out of scope
       {

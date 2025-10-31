@@ -79,7 +79,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest::kernels {
         images.view());
   }
 
-  void fillMask(Queue& queue, MaskDevice& mask) {
+  void fillMask(Queue& queue, MaskDeviceCollection& mask) {
     const uint32_t threads_per_block = 64;
     const uint32_t blocks_per_grid = mask.view().metadata().size();
     const auto grid = make_workdiv<Acc1D>(blocks_per_grid, threads_per_block);
@@ -87,7 +87,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest::kernels {
     alpaka::exec<Acc1D>(
         queue,
         grid,
-        [] ALPAKA_FN_ACC(Acc1D const& acc, MaskDevice::View mask_view) {
+        [] ALPAKA_FN_ACC(Acc1D const& acc, MaskDeviceCollection::View mask_view) {
           for (int32_t thread_idx : uniform_elements(acc, mask_view.metadata().size())) {
             // mask eta feature only
             mask_view[thread_idx].mask()[0] = 0;

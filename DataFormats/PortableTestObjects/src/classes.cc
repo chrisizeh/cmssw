@@ -8,6 +8,7 @@
 #include "DataFormats/PortableTestObjects/interface/LogitsHostCollection.h"
 #include "DataFormats/PortableTestObjects/interface/SimpleNetHostCollection.h"
 #include "DataFormats/PortableTestObjects/interface/MultiHeadNetHostCollection.h"
+#include "DataFormats/PortableTestObjects/interface/MaskHostCollection.h"
 
 SET_PORTABLEHOSTCOLLECTION_READ_RULES(portabletest::TestHostCollection);
 SET_PORTABLEHOSTMULTICOLLECTION_READ_RULES(portabletest::TestHostMultiCollection2);
@@ -19,3 +20,4 @@ SET_PORTABLEHOSTCOLLECTION_READ_RULES(portabletest::SimpleNetHostCollection);
 SET_PORTABLEHOSTCOLLECTION_READ_RULES(portabletest::MultiHeadNetHostCollection);
 SET_PORTABLEHOSTCOLLECTION_READ_RULES(portabletest::ImageHostCollection);
 SET_PORTABLEHOSTCOLLECTION_READ_RULES(portabletest::LogitsHostCollection);
+SET_PORTABLEHOSTCOLLECTION_READ_RULES(portabletest::MaskHostCollection);

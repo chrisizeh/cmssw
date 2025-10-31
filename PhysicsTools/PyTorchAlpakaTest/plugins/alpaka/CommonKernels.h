@@ -4,8 +4,8 @@
 #include <alpaka/alpaka.hpp>
 #include "DataFormats/PortableTestObjects/interface/alpaka/ParticleDeviceCollection.h"
 #include "DataFormats/PortableTestObjects/interface/alpaka/ImageDeviceCollection.h"
+#include "DataFormats/PortableTestObjects/interface/alpaka/MaskDeviceCollection.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "PhysicsTools/PyTorchAlpakaTest/interface/alpaka/MaskDevice.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest::kernels {
 
@@ -13,7 +13,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest::kernels {
 
   void randomFillParticleCollection(Queue& queue, ParticleDeviceCollection& particles);
   void randomFillImageCollection(Queue& queue, ImageDeviceCollection& images);
-  void fillMask(Queue& queue, MaskDevice& mask);
+  void fillMask(Queue& queue, MaskDeviceCollection& mask);
 
 }  // namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest::kernels
 

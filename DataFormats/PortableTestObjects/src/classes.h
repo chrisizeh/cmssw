@@ -14,9 +14,11 @@
 #include "DataFormats/PortableTestObjects/interface/LogitsSoA.h"
 #include "DataFormats/PortableTestObjects/interface/SimpleNetSoA.h"
 #include "DataFormats/PortableTestObjects/interface/MultiHeadNetSoA.h"
+#include "DataFormats/PortableTestObjects/interface/MaskSoA.h"
 
 #include "DataFormats/PortableTestObjects/interface/ParticleHostCollection.h"
 #include "DataFormats/PortableTestObjects/interface/ImageHostCollection.h"
 #include "DataFormats/PortableTestObjects/interface/LogitsHostCollection.h"
 #include "DataFormats/PortableTestObjects/interface/SimpleNetHostCollection.h"
 #include "DataFormats/PortableTestObjects/interface/MultiHeadNetHostCollection.h"
+#include "DataFormats/PortableTestObjects/interface/MaskHostCollection.h"

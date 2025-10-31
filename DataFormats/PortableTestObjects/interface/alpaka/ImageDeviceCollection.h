@@ -14,7 +14,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     // inside the ALPAKA_ACCELERATOR_NAMESPACE::portabletest namespace
     using namespace ::portabletest;
 
-    using ImageDeviceCollection = PortableCollection<Image>;
+    using ImageDeviceCollection = PortableCollection<ImageSoA>;
 
   }  // namespace portabletest
 
