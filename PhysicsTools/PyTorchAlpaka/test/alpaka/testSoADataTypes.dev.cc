@@ -53,20 +53,25 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   using SoA = SoATemplate<>;
   using SoAView = SoA::View;
-  using SoAMetaRecords = SoA::View::Metarecords;
+  using SoACollection = PortableCollection<SoA, Device>;
+  using SoACollectionView = PortableCollection<SoA, Device>::View;
+  using SoAHostCollection = PortableHostCollection<SoA>;
+  using SoAHostCollectionView = PortableHostCollection<SoA>::View;
+
 
   constexpr auto tol = 1.0e-5;
 
   class FillKernel {
   public:
-    template <typename TAcc, typename = std::enable_if_t<::alpaka::isAccelerator<TAcc>>>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, PortableCollection<SoA, Device>::View view) const {
+    template <typename TAcc>
+	requires ::alpaka::isAccelerator<TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, SoACollectionView view) const {
       if (cms::alpakatools::once_per_grid(acc)) {
         view.type() = 4;
         view.someNumber() = 5;
       }
 
-      for (int32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
+      for (auto i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
         view[i].a()(0) = 1 + i;
         view[i].a()(1) = 2 + i;
         view[i].a()(2) = 3 + i;
@@ -89,13 +94,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   class InputVerifyKernel {
   public:
-    ALPAKA_FN_ACC void operator()(Acc1D const& acc, PortableCollection<SoA, Device>::View view) const {
+    template <typename TAcc>
+	requires ::alpaka::isAccelerator<TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, SoACollectionView view) const {
       if (cms::alpakatools::once_per_grid(acc)) {
         ALPAKA_ASSERT_ACC(view.type() == 4);
         ALPAKA_ASSERT_ACC(view.someNumber() == 5);
       }
 
-      for (uint32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
+      for (auto i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
         ALPAKA_ASSERT_ACC(view[i].a()(0) == 1 + i);
         ALPAKA_ASSERT_ACC(view[i].a()(1) == 2 + i);
         ALPAKA_ASSERT_ACC(view[i].a()(2) == 3 + i);
@@ -118,8 +125,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   class TestOutputVerifyKernel {
   public:
-    ALPAKA_FN_ACC void operator()(Acc1D const& acc, PortableCollection<SoA, Device>::View view) const {
-      for (uint32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
+    template <typename TAcc>
+	requires ::alpaka::isAccelerator<TAcc>
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, SoACollectionView view) const {
+      for (auto i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
         ALPAKA_ASSERT_ACC(view.x()[i] - view.v()[i] < tol);
         ALPAKA_ASSERT_ACC(view.x()[i] - view.v()[i] > -tol);
 
@@ -129,24 +138,22 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     }
   };
 
-  void fill(Queue& queue, PortableCollection<SoA, Device>& collection) {
-    uint32_t items = 64;
-    uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
+  void fill(Queue& queue, SoACollection& collection) {
+    size_t items = 64;
+    auto groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
     auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
     ::alpaka::exec<Acc1D>(queue, workDiv, FillKernel{}, collection.view());
     ::alpaka::exec<Acc1D>(queue, workDiv, InputVerifyKernel{}, collection.view());
   }
 
-  void check_output(Queue& queue, PortableCollection<SoA, Device>& collection) {
-    uint32_t items = 64;
-    uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
+  void check_output(Queue& queue, SoACollection& collection) {
+    size_t items = 64;
+    auto groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
     auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
     ::alpaka::exec<Acc1D>(queue, workDiv, TestOutputVerifyKernel{}, collection.view());
   }
 
-  void check(PortableHostCollection<SoA>& hostCollection, std::vector<::torch::IValue> tensors) {
-    auto view = hostCollection.view();
-
+  void check(SoAHostCollectionView& view, std::vector<::torch::IValue>& tensors) {
     // Check if tensor list built correctly
     for (int i = 0; i < view.metadata().size(); i++) {
       CPPUNIT_ASSERT(view[i].a()(0) - tensors[3].toTensor()[i][0][0].item<double>() < tol);
@@ -202,10 +209,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     const std::size_t batch_size = 64;
 
     // Create and fill needed portable collections
-    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
-    PortableHostCollection<SoA> hostCollection(batch_size, queue);
+    SoACollection deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
-    SoAMetaRecords records = deviceCollection.view().records();
+    auto records = deviceCollection.view().records();
 
     TensorRegistry<Queue> input(batch_size);
     input.register_tensor<SoA>("vector", records.a(), records.b());
@@ -218,10 +224,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
     std::vector<::torch::IValue> tensors = convertInput(input, torchDevice);
 
+    SoAHostCollection hostCollection(batch_size, queue);
     alpaka::memcpy(queue, hostCollection.buffer(), deviceCollection.buffer());
     alpaka::wait(queue);
 
-    check(hostCollection, tensors);
+    check(hostCollection.view(), tensors);
   };
 
   void TestSOADataTypesAlpaka::testMultiOutput() {
@@ -237,7 +244,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     const std::size_t batch_size = 64;
 
     // Create and fill needed portable collections
-    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
+    SoACollection deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
 
     auto records = deviceCollection.view().records();
@@ -266,10 +273,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
     // Create and fill portable collections
     const std::size_t batch_size = 1;
-    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
-    PortableHostCollection<SoA> hostCollection(batch_size, queue);
+    SoACollection deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
-    SoAMetaRecords records = deviceCollection.view().records();
+    auto records = deviceCollection.view().records();
 
     // Run Converter for single tensor
     TensorRegistry<Queue> input(batch_size);
@@ -287,8 +293,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     std::vector<::torch::IValue> tensors = convertInput(input, torchDevice);
 
     // Check if tensor list built correctly
+    SoAHostCollection hostCollection(batch_size, queue);
     ::alpaka::memcpy(queue, hostCollection.buffer(), deviceCollection.buffer());
-    check(hostCollection, tensors);
+    check(hostCollection.view(), tensors);
   };
 
   void TestSOADataTypesAlpaka::testNoElement() {
@@ -301,8 +308,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
     //Create empty portable collection
     const std::size_t batch_size = 0;
-    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
-    SoAMetaRecords records = deviceCollection.view().records();
+    SoACollection deviceCollection(batch_size, queue);
+    auto records = deviceCollection.view().records();
 
     // Run Converter
     TensorRegistry<Queue> input(batch_size);
@@ -332,7 +339,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
     // Create and fill portable collections
     const std::size_t batch_size = 32;
-    PortableCollection<SoA, Device> deviceCollection(batch_size, queue);
+    SoACollection deviceCollection(batch_size, queue);
     fill(queue, deviceCollection);
 
     // Run Converter for empty metadata

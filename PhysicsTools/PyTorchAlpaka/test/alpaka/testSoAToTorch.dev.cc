@@ -20,14 +20,15 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
   GENERATE_SOA_LAYOUT(SoAPositionTemplate, SOA_COLUMN(float, x), SOA_COLUMN(float, y), SOA_COLUMN(float, z))
 
   using SoAPosition = SoAPositionTemplate<>;
-  using SoAPositionView = SoAPosition::View;
-  using SoAPositionConstView = SoAPosition::ConstView;
+  using PositionDeviceCollection = PortableCollection<SoAPosition, Device>;
+  using PositionDeviceCollectionView = PortableCollection<SoAPosition, Device>::View;
 
   // Output SOA
   GENERATE_SOA_LAYOUT(SoAResultTemplate, SOA_COLUMN(float, x), SOA_COLUMN(float, y))
 
   using SoAResult = SoAResultTemplate<>;
-  using SoAResultView = SoAResult::View;
+  using ResultDeviceCollection = PortableCollection<SoAResult, Device>;
+  using ResultDeviceCollectionView = PortableCollection<SoAResult, Device>::View;
 
   class testSOAToTorch : public CppUnit::TestFixture {
     CPPUNIT_TEST_SUITE(testSOAToTorch);
@@ -43,9 +44,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
   class FillKernel {
   public:
     template <typename TAcc, typename = std::enable_if_t<alpaka::isAccelerator<TAcc>>>
-    ALPAKA_FN_ACC void operator()(TAcc const& acc, PortableCollection<SoAPosition, Device>::View view) const {
-      float input[4][3] = {{1, 2, 1}, {2, 4, 3}, {3, 4, 1}, {2, 3, 2}};
-      for (int32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
+    ALPAKA_FN_ACC void operator()(TAcc const& acc, PositionDeviceCollectionView view) const {
+      float input[4][3] = {{1.f, 2.f, 1.f}, {2.f, 4.f, 3.f}, {3.f, 4.f, 1.f}, {2.f, 3.f, 2.f}};
+      for (auto i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
         view.x()[i] = input[i][0];
         view.y()[i] = input[i][1];
         view.z()[i] = input[i][2];
@@ -55,9 +56,9 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
   class TestVerifyKernel {
   public:
-    ALPAKA_FN_ACC void operator()(Acc1D const& acc, PortableCollection<SoAResult, Device>::View view) const {
-      float result_check[4][2] = {{2.3, -0.5}, {6.6, 3.0}, {2.5, -4.9}, {4.4, 1.3}};
-      for (uint32_t i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
+    ALPAKA_FN_ACC void operator()(Acc1D const& acc, ResultDeviceCollectionView view) const {
+      float result_check[4][2] = {{2.3f, -0.5f}, {6.6f, 3.0f}, {2.5f, -4.9f}, {4.4f, 1.3f}};
+      for (auto i : cms::alpakatools::uniform_elements(acc, view.metadata().size())) {
         ALPAKA_ASSERT_ACC(view.x()[i] - result_check[i][0] < 1.0e-05);
         ALPAKA_ASSERT_ACC(view.x()[i] - result_check[i][0] > -1.0e-05);
         ALPAKA_ASSERT_ACC(view.y()[i] - result_check[i][1] < 1.0e-05);
@@ -66,16 +67,16 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     }
   };
 
-  void fill(Queue& queue, PortableCollection<SoAPosition, Device>& collection) {
+  void fill(Queue& queue, PositionDeviceCollection& collection) {
     uint32_t items = 64;
-    uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
+    auto groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
     auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
     alpaka::exec<Acc1D>(queue, workDiv, FillKernel{}, collection.view());
   }
 
-  void check(Queue& queue, PortableCollection<SoAResult, Device>& collection) {
+  void check(Queue& queue, ResultDeviceCollection& collection) {
     uint32_t items = 64;
-    uint32_t groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
+    auto groups = cms::alpakatools::divide_up_by(collection->metadata().size(), items);
     auto workDiv = cms::alpakatools::make_workdiv<Acc1D>(groups, items);
     alpaka::exec<Acc1D>(queue, workDiv, TestVerifyKernel{}, collection.view());
   }
@@ -92,8 +93,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
     const std::size_t batch_size = 4;
 
     // Create and fill needed portable collections
-    PortableCollection<SoAPosition, Device> positionCollection(batch_size, alpakaDevice);
-    PortableCollection<SoAResult, Device> resultCollection(batch_size, alpakaDevice);
+    PositionDeviceCollection positionCollection(batch_size, alpakaDevice);
+	ResultDeviceCollection resultCollection(batch_size, alpakaDevice);
     fill(queue, positionCollection);
 
     // Deserialize the ScriptModule
@@ -103,12 +104,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE::torchtest {
 
     // Create SoA Metadata
     TensorRegistry<Queue> input(batch_size);
-    auto posview = positionCollection.const_view().records();
-    input.register_tensor<SoAPosition>("main", posview.x(), posview.y(), posview.z());
+    auto posRecords = positionCollection.const_view().records();
+    input.register_tensor<SoAPosition>("main", posRecords.x(), posRecords.y(), posRecords.z());
 
     TensorRegistry<Queue> output(batch_size);
-    auto view = resultCollection.view().records();
-    output.register_tensor<SoAResult>("result", view.x(), view.y());
+    auto resultRecords = resultCollection.view().records();
+    output.register_tensor<SoAResult>("result", resultRecords.x(), resultRecords.y());
 
     // Call inference
     model.forward(queue, input, output);

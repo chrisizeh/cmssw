@@ -26,10 +26,6 @@ namespace alpaka_serial_sync::torch {
   class AlpakaModel;
 }
 
-namespace alpaka::torch {
-  class AlpakaModel;
-}
-
 namespace cms::torch::alpakatools {
 
   using namespace cms::soa;
@@ -98,7 +94,6 @@ namespace cms::torch::alpakatools {
 	friend class alpaka_cuda_async::torch::AlpakaModel;
 	friend class alpaka_rocm_async::torch::AlpakaModel;
 	friend class alpaka_serial_sync::torch::AlpakaModel;
-	friend class alpaka::torch::AlpakaModel;
 
     explicit TensorRegistry(int batch_size) : batch_size_(batch_size) {}
 
