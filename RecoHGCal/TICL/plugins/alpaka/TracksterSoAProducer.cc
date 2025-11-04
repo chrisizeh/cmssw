@@ -125,6 +125,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
       std::vector<unsigned int> outer = ticlGraph.getNode(i).getOuterNeighbours();
       for (unsigned int node : outer) {
+        edgeView.max_raw_energy()[k] = std::max(nodeView.raw_energy()[i], nodeView.raw_energy()[node]);
         edgeView.raw_energy()[k] = std::abs(nodeView.raw_energy()[i] - nodeView.raw_energy()[node]);
         edgeView.barycenter_z()[k] = std::abs(nodeView.barycenter_z()[i] - nodeView.barycenter_z()[node]);
         edgeView.time()[k] = std::abs(nodeView.time()[i] - nodeView.time()[node]);
