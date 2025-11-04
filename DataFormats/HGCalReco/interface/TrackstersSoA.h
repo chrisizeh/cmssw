@@ -37,6 +37,7 @@ GENERATE_SOA_LAYOUT(GNNNodeSoALayout,
                     SOA_COLUMN(float, time));
 
 GENERATE_SOA_LAYOUT(GNNEdgeSoALayout,
+                    SOA_COLUMN(float, max_raw_energy),
                     SOA_COLUMN(float, raw_energy),
                     SOA_COLUMN(float, barycenter_z),
                     SOA_COLUMN(float, barycenter_xy),
@@ -47,7 +48,11 @@ GENERATE_SOA_LAYOUT(GNNEdgeIndexSoALayout, SOA_COLUMN(long, in), SOA_COLUMN(long
 
 GENERATE_SOA_LAYOUT(GNNOutputSoALayout, SOA_COLUMN(float, score));
 
-GENERATE_SOA_LAYOUT(GNNPostprocessingSoALayout, SOA_COLUMN(float, score), SOA_COLUMN(long, in), SOA_COLUMN(long, out));
+GENERATE_SOA_LAYOUT(GNNPostprocessingSoALayout,
+                    SOA_COLUMN(float, score),
+                    SOA_COLUMN(long, in),
+                    SOA_COLUMN(long, out),
+                    SOA_COLUMN(float, max_raw_energy));
 
 using GNNNodeSoA = GNNNodeSoALayout<>;
 using GNNEdgeSoA = GNNEdgeSoALayout<>;

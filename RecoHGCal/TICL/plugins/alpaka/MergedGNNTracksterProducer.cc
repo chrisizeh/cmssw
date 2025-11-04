@@ -51,7 +51,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     const edm::ESGetToken<MagneticField, IdealMagneticFieldRecord> bfield_token_;
     const edm::ESGetToken<Propagator, TrackingComponentsRecord> propagator_token_;
     const edm::EDPutTokenT<std::vector<ticl::Trackster>> merged_tracksters_token_; /**< Token to store output data. */
-    const edm::EDPutTokenT<std::vector<std::vector<unsigned int>>> linked_merged_trackstersId_token_; /**< Token to store output data. */
+    const edm::EDPutTokenT<std::vector<std::vector<unsigned int>>>
+        linked_merged_trackstersId_token_; /**< Token to store output data. */
     const HGCalDDDConstants *hgcons_;
     hgcal::RecHitTools rhtools_;
     edm::ESGetToken<HGCalDDDConstants, IdealGeometryRecord> hdc_token_;
@@ -72,8 +73,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
         propagator_token_(esConsumes<Propagator, TrackingComponentsRecord, edm::Transition::BeginRun>(
             edm::ESInputTag("", propName_))),
         merged_tracksters_token_{produces()},
-        linked_merged_trackstersId_token_{produces()}
-  {
+        linked_merged_trackstersId_token_{produces()} {
     std::string detectorName_ = (detector_ == "HFNose") ? "HGCalHFNoseSensitive" : "HGCalEESensitive";
     hdc_token_ = esConsumes<HGCalDDDConstants, IdealGeometryRecord, edm::Transition::BeginRun>(
         edm::ESInputTag("", detectorName_));
@@ -98,8 +98,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
     auto numEdges = gnn_output.view().metadata().size();
     auto edge_index_records = gnn_input.const_view<GNNEdgeIndexSoA>().records();
-    GNNPostprocessingSoA::ConstView merged_view(
-        gnn_output.const_view().records().score(), edge_index_records.in(), edge_index_records.out());
+    auto edge_feature_records = gnn_input.const_view<GNNEdgeSoA>().records();
+    GNNPostprocessingSoA::ConstView merged_view(gnn_output.const_view().records().score(),
+                                                edge_index_records.in(),
+                                                edge_index_records.out(),
+                                                edge_feature_records.max_raw_energy());
 
     TrackstersGNNPostprocessingSoAHostCollection gnn_post_host(numEdges, event.queue());
     gnn_post_host.deepCopy(merged_view, event.queue());
@@ -113,7 +116,8 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::iota(lookup.begin(), lookup.end(), 0);
     std::array<int, 2> merge_idx;
     for (int i = 0; i < numEdges; ++i) {
-      if (post_view.score()[i] > 0.99) {
+      if ((post_view.score()[i] > 0.2 && post_view.max_raw_energy()[i] < 50) ||
+          (post_view.score()[i] > 0.5 && post_view.max_raw_energy()[i] >= 50)) {
         merge_idx[0] = post_view.out()[i];
         while (merge_idx[0] != lookup[merge_idx[0]]) {
           merge_idx[0] = lookup[merge_idx[0]];
@@ -143,11 +147,11 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     }
 
     ticlAlpaka::assignPCAtoTracksters(output,
-                                layerClusters,
-                                layerClustersTimes,
-                                rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
-                                rhtools_,
-                                true);
+                                      layerClusters,
+                                      layerClustersTimes,
+                                      rhtools_.getPositionLayer(rhtools_.lastLayerEE()).z(),
+                                      rhtools_,
+                                      true);
     event.emplace(merged_tracksters_token_, std::move(output));
     event.emplace(linked_merged_trackstersId_token_, std::move(linkedTrackstersOutput));
   }
