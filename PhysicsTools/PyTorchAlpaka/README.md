@@ -5,9 +5,6 @@ This package extends the PyTorch implementation and enables seamless integration
 
 ## Interface for Alpaka Modules
 All Pytorch based modules should add `PyTorchService` to disable internal torchlib threading. It enforces single-threaded execution on CPU backends.
-On GPU backends the stream managament is done with `QueueGuard<>` construct that change the Pytorch stream to the one associated with Event. Whether the PyTorch functions are used the `QueueGuard<>` has to be active and set to schedule all async operations in a CMSSW framework controlled stream.
-
-**To enable proper execution user has to explicitly scope range of execution with `QueueGuard<Queue>` construct inside PortableModule.**
 
 Examples demonstrating the interoperability of PyTorch with Alpaka in the CMSSW environment can be found in the [PyTorchAlpakaTest](../PyTorchAlpakaTest) directory. The basic test pipeline includes:
 - *SimpleNet* composed with few Dense layers, that operate on SoA style portable data structures
