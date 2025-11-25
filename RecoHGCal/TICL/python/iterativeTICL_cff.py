@@ -191,7 +191,7 @@ ticlTracksterSoAProducer = TracksterSoAProducer_alpaka(ticlGraph = cms.InputTag(
 ticlTracksterSoATask = cms.Task(ticlTracksterSoAProducer)
 ticlTrackstersLinkingByGNNProducer = TracksterLinkingByGNNProducer_alpaka(
     inputs = cms.InputTag("ticlTracksterSoAProducer"),
-    modelPath = cms.FileInPath("RecoHGCal/TICL/models/0003_model_retrain_focus_contr.pt"),
+    modelPath = cms.FileInPath("RecoHGCal/TICL/models/0002_model_large_contr_att.pt"),
 )
 ticlTrackstersLinkingByGNNProducerTask = cms.Task(ticlTrackstersLinkingByGNNProducer)
 ticlMergedGNNTrackstersProducer = MergedGNNTracksterProducer_alpaka(
