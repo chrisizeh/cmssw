@@ -1,6 +1,5 @@
 #include <alpaka/alpaka.hpp>
 
-#include "DataFormats/PyTorchTest/interface/alpaka/Collections.h"
 #include "DataFormats/HGCalReco/interface/alpaka/TracksterSoADeviceCollection.h"
 #include "DataFormats/HGCalReco/interface/TICLGraph.h"
 #include "DataFormats/HGCalReco/interface/Trackster.h"
@@ -14,14 +13,11 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "PhysicsTools/PyTorch/interface/AlpakaConfig.h"
-#include "PhysicsTools/PyTorch/interface/Model.h"
-#include "PhysicsTools/PyTorch/interface/SoAMetadata.h"
-#include "PhysicsTools/PyTorch/interface/Nvtx.h"
+#include "PhysicsTools/PyTorchAlpaka/interface/TensorCollection.h"
+#include "PhysicsTools/PyTorchAlpaka/interface/alpaka/AlpakaModel.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
-  using JitModel = cms::torch::alpaka::Model<cms::torch::alpaka::CompilationType::kJustInTime>;
 
   class TracksterLinkingByGNNProducer : public stream::EDProducer<> {
   public:
@@ -33,23 +29,17 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
   private:
     const device::EDGetToken<TrackstersSoADeviceCollection> inputs_token_;
     const device::EDPutToken<TrackstersGNNOutputSoADeviceCollection> outputs_token_;
-    std::unique_ptr<JitModel> model_;
+    torch::AlpakaModel model_;
   };
 
   TracksterLinkingByGNNProducer::TracksterLinkingByGNNProducer(edm::ParameterSet const &params)
       : EDProducer<>(params),
         inputs_token_{consumes(params.getParameter<edm::InputTag>("inputs"))},
-        outputs_token_{produces()} {
-    cms::torch::alpaka::set_threading_guard();
-    model_ = std::make_unique<JitModel>(params.getParameter<edm::FileInPath>("modelPath").fullPath());
-  }
+        outputs_token_{produces()},
+		model_(params.getParameter<edm::FileInPath>("model").fullPath()) {}
+
 
   void TracksterLinkingByGNNProducer::produce(device::Event &event, const device::EventSetup &event_setup) {
-    // guard torch internal operations to not conflict with fw execution scheme
-    cms::torch::alpaka::Guard<Queue> guard(event.queue());
-    // sanity check
-    assert(cms::torch::alpaka::queue_hash(event.queue()) == cms::torch::alpaka::current_stream_hash(event.queue()));
-
     // get data
     auto &inputs = const_cast<TrackstersSoADeviceCollection &>(event.get(inputs_token_));
     const size_t numNodes = inputs.const_view<GNNNodeSoA>().metadata().size();
@@ -63,10 +53,10 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
       auto edge_feature_records = inputs.view<GNNEdgeSoA>().records();
       auto edge_index_records = inputs.view<GNNEdgeIndexSoA>().records();
       auto output_records = outputs.view().records();
-      cms::torch::alpaka::SoAMetadata<GNNNodeSoA> inputs_metadata(numNodes);
+      cms::torch::alpakatools::TensorCollection<Queue> inputs_collection(numNodes);
 
       // Converter can also do full SoA
-      inputs_metadata.append_block("nodes",
+      inputs_collection.add<GNNNodeSoA>("nodes",
                                    node_records.barycenter_x(),
                                    node_records.barycenter_y(),
                                    node_records.barycenter_z(),
@@ -97,7 +87,7 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                    node_records.trackster_density(),
                                    node_records.time());
 
-      inputs_metadata.append_block<GNNEdgeSoA>("edge_features",
+      inputs_collection.add<GNNEdgeSoA>("edge_features",
                                                numEdges,
                                                edge_feature_records.raw_energy(),
                                                edge_feature_records.barycenter_z(),
@@ -105,22 +95,12 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
                                                edge_feature_records.eigenvector0(),
                                                edge_feature_records.time());
 
-      inputs_metadata.append_block<GNNEdgeIndexSoA>(
+      inputs_collection.add<GNNEdgeIndexSoA>(
           "edge_index", numEdges, edge_index_records.in(), edge_index_records.out());
 
-      cms::torch::alpaka::SoAMetadata<GNNOutputSoA> outputs_metadata(numEdges);
-      outputs_metadata.append_block("preds", output_records.score());
-
-      cms::torch::alpaka::ModelMetadata<GNNNodeSoA, GNNOutputSoA> metadata(inputs_metadata, outputs_metadata);
-
-      // inference
-      if (cms::torch::alpaka::device(event.queue()) != model_->device()) {
-        std::cout << "(TracksterLinkingGNN) E: " << event.id().event() << " Model: " << model_->device() << " -> "
-                  << cms::torch::alpaka::device(event.queue()) << std::endl;
-        model_->to(event.queue());
-      }
-      assert(cms::torch::alpaka::device(event.queue()) == model_->device());
-      model_->forward(metadata);
+      cms::torch::alpakatools::TensorCollection<Queue> outputs_collection(numEdges);
+      outputs_collection.add<GNNOutputSoA>("preds", output_records.score());
+      model_.forward(event.queue(), inputs_collection, outputs_collection);
     }
     event.emplace(outputs_token_, std::move(outputs));
     alpaka::wait(event.queue());

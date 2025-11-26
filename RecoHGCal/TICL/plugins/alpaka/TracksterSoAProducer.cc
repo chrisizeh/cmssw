@@ -15,7 +15,6 @@
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/MakerMacros.h"
 #include "HeterogeneousCore/AlpakaCore/interface/alpaka/stream/EDProducer.h"
 #include "HeterogeneousCore/AlpakaInterface/interface/config.h"
-#include "PhysicsTools/PyTorch/interface/Nvtx.h"
 
 namespace ALPAKA_ACCELERATOR_NAMESPACE {
 
@@ -52,7 +51,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     std::stringstream msg_stream;
     msg_stream << "TracksterSoAProducer::produce [E: " << event.id().event() << "]";
     auto msg = msg_stream.str();
-    NvtxScopedRange produce_range(msg.c_str());
 
     int numTrackster = tracksters.size();
     int numEdges = ticlGraph.getNumberOfEdges();
@@ -151,7 +149,6 @@ namespace ALPAKA_ACCELERATOR_NAMESPACE {
     auto t2 = std::chrono::high_resolution_clock::now();
     std::cout << "(TracksterSoAProducer) E: " << event.id().event() << " OK - "
               << std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count() << " us" << std::endl;
-    produce_range.end();
   }
 
   /**
