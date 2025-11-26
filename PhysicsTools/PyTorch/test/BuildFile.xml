@@ -1,160 +1,6 @@
-<use name="python_tools"/>
-
-<bin file="alpaka/testModelAlpakaNamespace.cc testRunner.cc" name="testModelAlpakaNamespace">
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<!-- <bin file="alpaka/testModelAOT.cc testRunner.cc" name="testModelAOT">
-  <use name="cppunit"/>
-  <use name="eigen"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin> -->
-
-<bin file="alpaka/testModelJIT.cc testRunner.cc" name="testModelJIT">
-  <use name="cppunit"/>
-  <use name="eigen"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<!-- <bin file="alpaka/testPortableInferenceAOT.dev.cc testRunner.cc" name="testPortableInferenceAOT">
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="eigen"/>
-  <use name="DataFormats/Portable"/>
-  <use name="DataFormats/PortableTestObjects"/>
-  <use name="FWCore/Framework"/>
-  <use name="FWCore/ParameterSet"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/AlpakaCore"/>
-  <use name="HeterogeneousCore/AlpakaInterface"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin> -->
-
-<bin file="alpaka/testPortableInferenceJIT.cc testRunner.cc" name="testPortableInferenceJIT">
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="eigen"/>
-  <use name="DataFormats/Portable"/>
-  <use name="DataFormats/PortableTestObjects"/>
-  <use name="FWCore/Framework"/>
-  <use name="FWCore/ParameterSet"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/AlpakaCore"/>
-  <use name="HeterogeneousCore/AlpakaInterface"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<bin file="alpaka/testSOADataTypes.dev.cc testRunner.cc" name="testSOADataTypes">
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="eigen"/>
-  <use name="DataFormats/Portable"/>
-  <use name="DataFormats/PortableTestObjects"/>
-  <use name="FWCore/Framework"/>
-  <use name="FWCore/ParameterSet"/>
-  <use name="FWCore/Utilities"/>
-  <use name="HeterogeneousCore/AlpakaCore"/>
-  <use name="HeterogeneousCore/AlpakaInterface"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<bin file="alpaka/testSOAtoTorch.dev.cc testRunner.cc" name="testSOAtoTorch">
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="eigen"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<bin file="alpaka/testMultiSoA.dev.cc testRunner.cc" name="testMultiSoA">
-  <use name="alpaka"/>
-  <use name="cppunit"/>
-  <use name="eigen"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<bin file="alpaka/testTorchDeviceMatchAlpaka.cc testRunner.cc" name="testTorchDeviceMatchAlpaka">
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<bin file="alpaka/testTorchExecutionControlGuard.cc testRunner.cc" name="testTorchExecutionControlGuard">
-  <use name="cppunit"/>
-  <use name="eigen"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="FWCore/Utilities"/>
-  <flags ALPAKA_BACKENDS="serial cuda"/>
-</bin>
-
-<bin file="testModelCpu.cc testRunner.cc" name="testModelCpu">
-  <use name="cppunit"/>
-  <use name="pytorch"/>
-</bin>
-
-<bin file="testModelCuda.cc testRunner.cc" name="testModelCuda">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
-
-<iftool name="cuda-gcc-support">
-<bin name="testTensorStride" file="testRunner.cc,testTensorStride.cu">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
-</iftool>
-
-<iftool name="cuda-gcc-support">
-<bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="pytorch-cuda"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
-
-<iftool name="cuda-gcc-support">
-<bin name="testTorchFromBufferPinnedMemory" file="testTorchFromBufferPinnedMemory.cu">
-  <use name="cppunit"/>
-  <use name="cuda"/>
-  <use name="pytorch"/>
-  <use name="HeterogeneousCore/CUDAUtilities"/>
-</bin>
-</iftool>
-
-<test name="TestPyTorchPipelineCpu" command="testPyTorchPipeline.sh cpu"/>
-<test name="TestPyTorchPipelineCuda" command="testPyTorchPipeline.sh cuda">
-  <use name="cuda"/>
+<test name="pytorch-create_simple_dnn" command="create_simple_dnn.py ."/>
+<test name="pytorch-test_simple_dnn"   command="test_simple_dnn.py .">
+  <flags PRE_TEST="pytorch-create_simple_dnn"/>
 </test>
 <test name="test-torch-tensor-cpu"     command="torch-tensor.py cpu"/>
 <test name="test-torch-tensor"         command="torch-tensor.py"/>
@@ -173,4 +19,85 @@
   <test name="test-torch-tensor-gpu"   command="torch-tensor.py cuda">
     <use name="cuda"/>
   </test>
+</iftool>
+
+<iftool name="cuda-gcc-support">
+  <bin name="testJitLoad" file="testJitLoad.cc testRunner.cc">
+	<use name="boost_filesystem"/>
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+	<use name="PhysicsTools/PyTorch"/>
+  </bin>
+</iftool>
+
+<bin name="testTorchlibModelsCpu" file="testTorchlibModelsCpu.cc testRunner.cc">
+  <use name="cppunit"/>
+  <use name="pytorch"/>
+</bin>
+
+<iftool name="cuda-gcc-support">
+  <bin name="testTorchlibModelsCuda" file="testTorchlibModelsCuda.cc testRunner.cc">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
+</iftool>
+
+<iftool name="cuda-gcc-support">
+  <bin name="testTorchTensorStride" file="testRunner.cc testTorchTensorStride.cu">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
+</iftool>
+
+<iftool name="cuda-gcc-support">
+  <bin name="testTorchFromBlobStride" file="testTorchFromBlobStride.cu">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
+</iftool>
+
+<iftool name="cuda-gcc-support">
+  <bin name="testTorchFromBufferPinnedMemory" file="testTorchFromBufferPinnedMemory.cu">
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+  </bin>
+</iftool>
+
+<!-- <iftool name="cuda-gcc-support">
+  <bin name="testModelAot" file="testModelAot.cc testRunner.cc">
+	<use name="boost_filesystem"/>
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="FWCore/Utilities"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+	<use name="PhysicsTools/PyTorch"/>
+  </bin> 
+</iftool> -->
+
+<iftool name="cuda-gcc-support">
+  <bin name="testModelJit" file="testModelJit.cc testRunner.cc">
+	<use name="boost_filesystem"/>
+	<use name="cppunit"/>
+	<use name="cuda"/>
+	<use name="pytorch"/>
+	<use name="pytorch-cuda"/>
+	<use name="HeterogeneousCore/CUDAUtilities"/>
+	<use name="PhysicsTools/PyTorch"/>
+  </bin>
 </iftool>
